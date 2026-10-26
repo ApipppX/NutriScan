@@ -1,0 +1,37 @@
+name: nutriscan
+description: "100% offline food image classification and nutrition estimation."
+publish_to: "none"
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.13.4
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # State management
+  flutter_riverpod: ^3.4.3
+
+  # On-device inference
+  tflite_flutter: ^0.12.1
+
+  # Media access + pixel manipulation
+  image_picker: ^1.2.4
+  image: ^4.12.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  integration_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/models/food_classifier.tflite
+    - assets/data/class_names.json
+    - assets/data/nutrition_data.json

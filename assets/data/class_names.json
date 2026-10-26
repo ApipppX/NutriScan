@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "modelVersion": "2.0.0",
+  "createdAt": "2026-10-22T08:41:34Z",
+  "input": {
+    "width": 224,
+    "height": 224,
+    "channels": 3,
+    "colorOrder": "RGB",
+    "normalization": "[-1,1]"
+  },
+  "labels": [
+    "Ayam Goreng",
+    "Burger",
+    "French Fries",
+    "Gado-Gado",
+    "Ikan Goreng",
+    "Mie Goreng",
+    "Nasi Goreng",
+    "Nasi Padang",
+    "Pizza",
+    "Rawon",
+    "Rendang",
+    "Sate",
+    "Soto"
+  ],
+  "classCount": 13,
+  "primaryModel": "food_classifier.tflite",
+  "quantization": "fp16",
+  "modelSha256": "d2d5ed50a15643f3e91830bc01c39b97d973b653c76071e22831233baca30d56",
+  "confidenceTemperature": 0.7000000000000002,
+  "calibration": {
+    "method": "temperature_scaling",
+    "fitSplit": "validation",
+    "temperature": 0.7000000000000002,
+    "validation": {
+      "samples": 413,
+      "expectedCalibrationErrorBefore": 0.06731093916576383,
+      "expectedCalibrationErrorAfter": 0.04302714328569694
+    },
+    "test": {
+      "independent": true,
+      "expectedCalibrationErrorBefore": 0.06156301610401188,
+      "expectedCalibrationErrorAfter": 0.02236961396804385
+    }
+  }
+}

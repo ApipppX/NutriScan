@@ -1,0 +1,301 @@
+{
+  "schemaVersion": 1,
+  "modelVersion": "2.0.0",
+  "modelSha256": "d2d5ed50a15643f3e91830bc01c39b97d973b653c76071e22831233baca30d56",
+  "generatedAt": "2026-10-22T08:41:34Z",
+  "referenceAmount": 100,
+  "referenceUnit": "g",
+  "defaultPortionGrams": 100,
+  "classCount": 13,
+  "classes": [
+    {
+      "index": 0,
+      "label": "Ayam Goreng",
+      "normalizedLabel": "ayam_goreng",
+      "displayName": "Ayam Goreng",
+      "emoji": "🍗",
+      "category": "main",
+      "aliases": [
+        "ayam_goreng",
+        "ayam_goreng_krispi",
+        "fried_chicken"
+      ],
+      "defaultPortionGrams": 150,
+      "nutritionPer100g": {
+        "caloriesKcal": 260.0,
+        "proteinG": 27.0,
+        "carbohydrateG": 6.0,
+        "fatG": 14.5,
+        "fiberG": 0.3,
+        "sodiumMg": 550.0
+      }
+    },
+    {
+      "index": 1,
+      "label": "Burger",
+      "normalizedLabel": "burger",
+      "displayName": "Burger",
+      "emoji": "🍔",
+      "category": "main",
+      "aliases": [
+        "beef_burger",
+        "burger",
+        "hamburger"
+      ],
+      "defaultPortionGrams": 200,
+      "nutritionPer100g": {
+        "caloriesKcal": 250.0,
+        "proteinG": 13.0,
+        "carbohydrateG": 30.0,
+        "fatG": 9.0,
+        "fiberG": 1.7,
+        "sodiumMg": 500.0
+      }
+    },
+    {
+      "index": 2,
+      "label": "French Fries",
+      "normalizedLabel": "french_fries",
+      "displayName": "French Fries",
+      "emoji": "🍟",
+      "category": "snack",
+      "aliases": [
+        "french_fries",
+        "fries",
+        "kentang_goreng"
+      ],
+      "defaultPortionGrams": 120,
+      "nutritionPer100g": {
+        "caloriesKcal": 312.0,
+        "proteinG": 3.4,
+        "carbohydrateG": 41.0,
+        "fatG": 15.0,
+        "fiberG": 3.8,
+        "sodiumMg": 210.0
+      }
+    },
+    {
+      "index": 3,
+      "label": "Gado-Gado",
+      "normalizedLabel": "gado_gado",
+      "displayName": "Gado-Gado",
+      "emoji": "🥗",
+      "category": "main",
+      "aliases": [
+        "gado_gado",
+        "vegetable_salad"
+      ],
+      "defaultPortionGrams": 250,
+      "nutritionPer100g": {
+        "caloriesKcal": 94.0,
+        "proteinG": 4.1,
+        "carbohydrateG": 9.5,
+        "fatG": 4.5,
+        "fiberG": 2.8,
+        "sodiumMg": 260.0
+      }
+    },
+    {
+      "index": 4,
+      "label": "Ikan Goreng",
+      "normalizedLabel": "ikan_goreng",
+      "displayName": "Ikan Goreng",
+      "emoji": "🐟",
+      "category": "main",
+      "aliases": [
+        "fried_fish",
+        "fried_fish_fillet",
+        "ikan_goreng"
+      ],
+      "defaultPortionGrams": 150,
+      "nutritionPer100g": {
+        "caloriesKcal": 200.0,
+        "proteinG": 22.0,
+        "carbohydrateG": 6.5,
+        "fatG": 9.5,
+        "fiberG": 0.2,
+        "sodiumMg": 400.0
+      }
+    },
+    {
+      "index": 5,
+      "label": "Mie Goreng",
+      "normalizedLabel": "mie_goreng",
+      "displayName": "Mie Goreng",
+      "emoji": "🍜",
+      "category": "main",
+      "aliases": [
+        "fried_noodles",
+        "mi_goreng",
+        "mie_goreng"
+      ],
+      "defaultPortionGrams": 220,
+      "nutritionPer100g": {
+        "caloriesKcal": 190.0,
+        "proteinG": 5.1,
+        "carbohydrateG": 24.8,
+        "fatG": 8.4,
+        "fiberG": 1.6,
+        "sodiumMg": 510.0
+      }
+    },
+    {
+      "index": 6,
+      "label": "Nasi Goreng",
+      "normalizedLabel": "nasi_goreng",
+      "displayName": "Nasi Goreng",
+      "emoji": "🍚",
+      "category": "main",
+      "aliases": [
+        "fried_rice",
+        "nasgor",
+        "nasi_goreng"
+      ],
+      "defaultPortionGrams": 250,
+      "nutritionPer100g": {
+        "caloriesKcal": 168.0,
+        "proteinG": 4.2,
+        "carbohydrateG": 22.4,
+        "fatG": 6.8,
+        "fiberG": 1.2,
+        "sodiumMg": 420.0
+      }
+    },
+    {
+      "index": 7,
+      "label": "Nasi Padang",
+      "normalizedLabel": "nasi_padang",
+      "displayName": "Nasi Padang",
+      "emoji": "🍛",
+      "category": "main",
+      "aliases": [
+        "nasi_kapau",
+        "nasi_padang",
+        "padang_rice"
+      ],
+      "defaultPortionGrams": 350,
+      "nutritionPer100g": {
+        "caloriesKcal": 190.0,
+        "proteinG": 6.0,
+        "carbohydrateG": 24.0,
+        "fatG": 8.0,
+        "fiberG": 0.8,
+        "sodiumMg": 450.0
+      }
+    },
+    {
+      "index": 8,
+      "label": "Pizza",
+      "normalizedLabel": "pizza",
+      "displayName": "Pizza",
+      "emoji": "🍕",
+      "category": "main",
+      "aliases": [
+        "cheese_pizza",
+        "pizza",
+        "pizza_slice"
+      ],
+      "defaultPortionGrams": 200,
+      "nutritionPer100g": {
+        "caloriesKcal": 266.0,
+        "proteinG": 11.0,
+        "carbohydrateG": 33.0,
+        "fatG": 10.0,
+        "fiberG": 2.3,
+        "sodiumMg": 598.0
+      }
+    },
+    {
+      "index": 9,
+      "label": "Rawon",
+      "normalizedLabel": "rawon",
+      "displayName": "Rawon",
+      "emoji": "🍲",
+      "category": "main",
+      "aliases": [
+        "beef_black_soup",
+        "rawon",
+        "rawon_sapi"
+      ],
+      "defaultPortionGrams": 300,
+      "nutritionPer100g": {
+        "caloriesKcal": 130.0,
+        "proteinG": 10.0,
+        "carbohydrateG": 5.0,
+        "fatG": 8.0,
+        "fiberG": 0.4,
+        "sodiumMg": 620.0
+      }
+    },
+    {
+      "index": 10,
+      "label": "Rendang",
+      "normalizedLabel": "rendang",
+      "displayName": "Rendang",
+      "emoji": "🍖",
+      "category": "main",
+      "aliases": [
+        "beef_rendang",
+        "rendang",
+        "rendang_daging"
+      ],
+      "defaultPortionGrams": 150,
+      "nutritionPer100g": {
+        "caloriesKcal": 193.0,
+        "proteinG": 22.6,
+        "carbohydrateG": 5.2,
+        "fatG": 10.9,
+        "fiberG": 1.1,
+        "sodiumMg": 480.0
+      }
+    },
+    {
+      "index": 11,
+      "label": "Sate",
+      "normalizedLabel": "sate",
+      "displayName": "Sate Ayam",
+      "emoji": "🍢",
+      "category": "main",
+      "aliases": [
+        "chicken_satay",
+        "satay",
+        "sate",
+        "sate_ayam"
+      ],
+      "defaultPortionGrams": 150,
+      "nutritionPer100g": {
+        "caloriesKcal": 207.0,
+        "proteinG": 18.9,
+        "carbohydrateG": 6.1,
+        "fatG": 12.3,
+        "fiberG": 0.6,
+        "sodiumMg": 390.0
+      }
+    },
+    {
+      "index": 12,
+      "label": "Soto",
+      "normalizedLabel": "soto",
+      "displayName": "Soto",
+      "emoji": "🍜",
+      "category": "main",
+      "aliases": [
+        "chicken_soup",
+        "soto",
+        "soto_ayam",
+        "soto_daging"
+      ],
+      "defaultPortionGrams": 300,
+      "nutritionPer100g": {
+        "caloriesKcal": 110.0,
+        "proteinG": 7.0,
+        "carbohydrateG": 8.0,
+        "fatG": 5.5,
+        "fiberG": 0.5,
+        "sodiumMg": 480.0
+      }
+    }
+  ],
+  "warnings": [],
+  "disclaimer": "Nutrition values are estimates and may vary by recipe, portion, and ingredients. This application is not a medical device."
+}
