@@ -291,6 +291,10 @@ final class _DiaryActionBar extends StatelessWidget {
         top: false,
         minimum: const EdgeInsets.fromLTRB(16, 10, 16, 10),
         child: Center(
+          // `heightFactor: 1` keeps the bar at its intrinsic height. Without it
+          // `Center` expands to the Scaffold's full height, which starves the
+          // body of space (the result page would render blank).
+          heightFactor: 1,
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 620),
             child: LayoutBuilder(

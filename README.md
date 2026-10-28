@@ -27,7 +27,7 @@ No image ever leaves the device. The Android manifest intentionally declares no 
 | Result experience | Animated macro donut, confidence percentage bar, retake action, portion stepper with quick presets, complete per-serving facts |
 | Localization | English/snake_case model labels mapped to Indonesian names (`fried_noodles` → `Olahan Mie`) |
 | Daily diary | Offline breakfast/lunch/dinner/snack log with localized names and per-portion nutrition |
-| Tests | 39 unit/widget tests + one Android device integration test |
+| Tests | 40 unit/widget tests + one Android device integration test |
 
 Classes: `Ayam Goreng`, `Burger`, `French Fries`, `Gado-Gado`, `Ikan Goreng`, `Mie Goreng`, `Nasi Goreng`, `Nasi Padang`, `Pizza`, `Rawon`, `Rendang`, `Sate`, `Soto`.
 
@@ -314,7 +314,7 @@ python ml_pipeline/generate_nutrition_data.py \
   --output /tmp/nutrition_check.json
 ```
 
-There are 39 unit/widget tests. They cover inference preprocessing and calibration, nutrition catalog parsing, portion scaling, label localization, meal-category suggestion, diary saving, the confidence/portion result card, and the meal picker. The integration test builds a synthetic JPEG, loads the bundled TFLite model, runs one classification in the inference isolate (including calibrated confidence), and joins the result with the nutrition repository.
+There are 40 unit/widget tests. They cover inference preprocessing and calibration, nutrition catalog parsing, portion scaling, label localization, meal-category suggestion, diary saving, the confidence/portion result card, the meal picker, and a regression guard that keeps the scan result visible above the diary action bar. The integration test builds a synthetic JPEG, loads the bundled TFLite model, runs one classification in the inference isolate (including calibrated confidence), and joins the result with the nutrition repository.
 
 ---
 
