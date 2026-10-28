@@ -24,7 +24,10 @@ No image ever leaves the device. The Android manifest intentionally declares no 
 | Nutrition | Per-100 g values in `nutrition_data.json`, indexed to model outputs |
 | Inference | Long-lived background isolate; no per-scan interpreter reload |
 | UI | Material 3, Indonesian copy, light/dark theme, idle/loading/success/error states |
-| Tests | 21 unit/widget tests + one Android device integration test |
+| Result experience | Animated macro donut, confidence percentage bar, retake action, portion stepper with quick presets, complete per-serving facts |
+| Localization | English/snake_case model labels mapped to Indonesian names (`fried_noodles` → `Olahan Mie`) |
+| Daily diary | Offline breakfast/lunch/dinner/snack log with localized names and per-portion nutrition |
+| Tests | 39 unit/widget tests + one Android device integration test |
 
 Classes: `Ayam Goreng`, `Burger`, `French Fries`, `Gado-Gado`, `Ikan Goreng`, `Mie Goreng`, `Nasi Goreng`, `Nasi Padang`, `Pizza`, `Rawon`, `Rendang`, `Sate`, `Soto`.
 
@@ -63,21 +66,26 @@ These numbers describe this dataset, not universal food recognition accuracy. Se
 │   ├── main.dart                     # ProviderScope entrypoint
 │   ├── bootstrap/
 │   │   └── app_bootstrap_gate.dart   # splash / retry while model loads
-│   ├── core/                         # theme, constants, errors, logging, formatters
-│   └── features/food_scan/
-│       ├── domain/                   # entities, repository contracts, ScanFoodUseCase
-│       ├── data/
-│       │   ├── datasources/          # asset-backed nutrition catalog
-│       │   ├── ml/                   # image preprocessing + inference isolate
-│       │   ├── models/               # JSON DTOs
-│       │   ├── repositories/         # in-memory nutrition repository
-│       │   └── services/             # image picker + TFLite classifier
-│       └── presentation/
-│           ├── controllers/          # ScanController (Riverpod Notifier)
-│           ├── providers/            # dependency wiring + bootstrap provider
-│           ├── screens/              # ScannerScreen
-│           ├── state/                # sealed ScanState
-│           └── widgets/              # stage card, result card, bottom sheet, errors
+│   ├── core/                         # theme, constants, errors, logging, formatters, localization
+│   └── features/
+│       ├── daily_diary/
+│       │   ├── domain/               # MealType, DiaryEntry, DiaryRepository contract
+│       │   ├── data/                 # in-memory diary repository
+│       │   └── presentation/         # DiaryController + meal category sheet
+│       └── food_scan/
+│           ├── domain/               # entities, repository contracts, ScanFoodUseCase
+│           ├── data/
+│           │   ├── datasources/      # asset-backed nutrition catalog
+│           │   ├── ml/               # image preprocessing + inference isolate
+│           │   ├── models/           # JSON DTOs
+│           │   ├── repositories/     # in-memory nutrition repository
+│           │   └── services/         # image picker + TFLite classifier
+│           └── presentation/
+│               ├── controllers/      # ScanController (portion + scan state)
+│               ├── providers/        # dependency wiring + bootstrap provider
+│               ├── screens/          # ScannerScreen + diary action bar
+│               ├── state/            # sealed ScanState
+│               └── widgets/          # result card, macro donut, confidence, portion, sheets
 ├── ml_pipeline/
 │   ├── train_export.py               # end-to-end train/evaluate/convert/export
 │   ├── generate_nutrition_data.py    # strict label -> nutrition catalog generator
@@ -109,11 +117,19 @@ The app loads the model and nutrition catalog during a bootstrap splash. Once re
 
 1. Tap **Kamera** or **Galeri**.
 2. The scanning line animates while inference runs in a background isolate.
-3. Review calories, macro breakdown, and confidence.
-4. Tap **Atur porsi & rincian** to adjust the portion and see fiber/sodium.
-5. If confidence is low, pick an alternative prediction or retake the photo.
+3. Review the localized food name, AI confidence bar, macro donut, and all per-serving values (calories, protein, carbs, fat, fiber, sodium).
+4. Adjust the portion with the stepper or the ½/1/1½/2-portion presets; every value recalculates instantly.
+5. Tap **Simpan ke Diary**, choose **Sarapan / Makan Siang / Makan Malam / Camilan**, and confirm.
+6. If confidence is low, tap **Foto Ulang** for a better shot or pick an alternative prediction.
 
 No network is required after installation.
+
+### New in `feature/nutrition-result-diary`
+
+- **Localized labels:** `FoodLabelLocalizer` normalizes model labels (`Fried Noodles`, `fried-noodles`, `fried_noodles`) and maps them to Indonesian names such as **Olahan Mie**.
+- **Confidence bar:** the result card shows a percentage bar with a high/medium/low level; below 60% it reveals an inline **Foto Ulang** action.
+- **Live portion modifier:** the stepper is backed by `ScanController`, so the result card and the sticky diary bar always show the same recalculated nutrition.
+- **Daily diary:** the sticky bottom bar opens a meal-category sheet and stores a `DiaryEntry` through `DiaryController` and `DiaryRepository`. The current implementation is in-memory and ready to be swapped for sqflite.
 
 ### Build
 
@@ -298,7 +314,7 @@ python ml_pipeline/generate_nutrition_data.py \
   --output /tmp/nutrition_check.json
 ```
 
-There are 21 unit/widget tests. The integration test builds a synthetic JPEG, loads the bundled TFLite model, runs one classification in the inference isolate (including calibrated confidence), and joins the result with the nutrition repository.
+There are 39 unit/widget tests. They cover inference preprocessing and calibration, nutrition catalog parsing, portion scaling, label localization, meal-category suggestion, diary saving, the confidence/portion result card, and the meal picker. The integration test builds a synthetic JPEG, loads the bundled TFLite model, runs one classification in the inference isolate (including calibrated confidence), and joins the result with the nutrition repository.
 
 ---
 
@@ -311,6 +327,8 @@ There are 21 unit/widget tests. The integration test builds a synthetic JPEG, lo
 3. Keep the same `findByIndex` / `findByLabel` semantics and index/label normalization.
 
 No widget, controller, or use case changes are required.
+
+`DiaryRepository` follows the same pattern. Replace `InMemoryDiaryRepository` with a sqflite-backed implementation, update `diaryRepositoryProvider`, and keep `DiaryController.saveMeal` as the single write path. The result card, meal sheet, and diary action bar do not change.
 
 ---
 

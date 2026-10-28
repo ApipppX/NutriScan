@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/logging/app_logger.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/utils/formatters.dart';
 import '../../../../core/widgets/brand_mark.dart';
 import '../../../../core/widgets/offline_badge.dart';
+import '../../../daily_diary/presentation/providers/diary_providers.dart';
+import '../../../daily_diary/presentation/widgets/meal_type_sheet.dart';
 import '../../domain/entities/scan_source.dart';
 import '../controllers/scan_controller.dart';
 import '../state/scan_state.dart';
@@ -58,6 +63,49 @@ final class _ScannerScreenState extends ConsumerState<ScannerScreen> {
     }
   }
 
+  Future<void> _saveMeal(ScanSuccessState state) async {
+    final candidate = state.result.selected;
+    final mealType = await showMealTypeSheet(
+      context,
+      candidate: candidate,
+      portionGrams: state.effectivePortionGrams,
+      facts: state.portionNutrition,
+    );
+    if (mealType == null || !mounted) return;
+
+    try {
+      final entry = await ref
+          .read(diaryControllerProvider.notifier)
+          .saveMeal(
+            candidate: candidate,
+            portionGrams: state.effectivePortionGrams,
+            mealType: mealType,
+            confidence: candidate.confidence,
+          );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(
+              '${entry.displayName} disimpan ke ${entry.mealType.label} · '
+              '${formatKcal(entry.caloriesKcal)}',
+            ),
+          ),
+        );
+    } catch (error, stackTrace) {
+      AppLogger.error('Failed to save diary entry.', error, stackTrace);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('Gagal menyimpan ke diary. Silakan coba lagi.'),
+          ),
+        );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.listen<ScanState>(scanControllerProvider, _focusResult);
@@ -66,6 +114,9 @@ final class _ScannerScreenState extends ConsumerState<ScannerScreen> {
     final scheme = Theme.of(context).colorScheme;
 
     return Scaffold(
+      bottomNavigationBar: state is ScanSuccessState
+          ? _DiaryActionBar(state: state, onSave: () => _saveMeal(state))
+          : null,
       body: Stack(
         children: <Widget>[
           Positioned(
@@ -185,7 +236,10 @@ final class _ScannerScreenState extends ConsumerState<ScannerScreen> {
       ScanSuccessState() => ScanResultCard(
         key: ValueKey<String>('result-${state.result.selected.label}'),
         result: state.result,
+        portionGrams: state.effectivePortionGrams,
         onSelectCandidate: controller.selectCandidate,
+        onPortionChanged: controller.setPortion,
+        onRetake: () => controller.pickAndScan(ScanSource.camera),
         onScanAgain: controller.reset,
       ),
       ScanFailureState() => ScanFailureCard(
@@ -200,6 +254,102 @@ final class _ScannerScreenState extends ConsumerState<ScannerScreen> {
         key: ValueKey<String>('processing'),
       ),
     };
+  }
+}
+
+/// Sticky bottom action bar that saves the current scan to the daily diary.
+final class _DiaryActionBar extends StatelessWidget {
+  const _DiaryActionBar({required this.state, required this.onSave});
+
+  final ScanSuccessState state;
+  final VoidCallback onSave;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final macros = theme.extension<MacroColors>()!;
+    final candidate = state.result.selected;
+    final facts = state.portionNutrition;
+    final unit = portionUnitForCategory(candidate.food.category);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: scheme.surface,
+        border: Border(
+          top: BorderSide(color: scheme.outlineVariant.withValues(alpha: 0.55)),
+        ),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: scheme.shadow.withValues(alpha: 0.08),
+            blurRadius: 24,
+            offset: const Offset(0, -8),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        minimum: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 620),
+            child: LayoutBuilder(
+              builder: (BuildContext context, BoxConstraints constraints) {
+                final compact = constraints.maxWidth < 380;
+                return Row(
+                  children: <Widget>[
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: macros.caloriesContainer,
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Icon(
+                        Icons.local_fire_department_rounded,
+                        color: macros.calories,
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(width: 11),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: <Widget>[
+                          Text(
+                            formatKcal(facts.caloriesKcal),
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              color: macros.calories,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          Text(
+                            '${formatPortionInUnit(state.effectivePortionGrams, unit)} · '
+                            '${formatPortionCount(candidate.food.portionCountFor(state.effectivePortionGrams))}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: scheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    FilledButton.icon(
+                      onPressed: onSave,
+                      icon: const Icon(Icons.bookmark_add_rounded, size: 19),
+                      label: Text(compact ? 'Simpan' : 'Simpan ke Diary'),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 
