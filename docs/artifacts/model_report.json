@@ -1,0 +1,1248 @@
+{
+  "createdAt": "2026-10-28T06:35:59Z",
+  "modelVersion": "2.2.0",
+  "architecture": "mobilenetv3_large",
+  "pretrainedWeights": "imagenet",
+  "selectedStage": "finetuned",
+  "classNames": [
+    "Ayam Goreng",
+    "Bakso",
+    "Burger",
+    "French Fries",
+    "Gado-Gado",
+    "Ikan Goreng",
+    "Mie Goreng",
+    "Nasi Goreng",
+    "Nasi Padang",
+    "Pizza",
+    "Rawon",
+    "Rendang",
+    "Sate",
+    "Soto"
+  ],
+  "classCount": 14,
+  "trainingConfiguration": {
+    "inputSize": 224,
+    "batchSize": 32,
+    "initialEpochs": 18,
+    "fineTuneEpochs": 10,
+    "fineTuneLayers": 60,
+    "dropout": 0.35,
+    "labelSmoothing": 0.05,
+    "valSplit": null,
+    "valDir": "D:\\Dataset Makanan 1GB\\dataset_clean_mendeley_bakso\\valid",
+    "testDir": "D:\\Dataset Makanan 1GB\\dataset_clean_mendeley_bakso\\test",
+    "classWeights": false,
+    "seed": 42,
+    "trainSamples": 5488,
+    "tfliteAuditSamples": "all-validation"
+  },
+  "validationEvaluation": {
+    "accuracy": 0.9212253829321663,
+    "accuracy95CI": [
+      0.8971553610503282,
+      0.9452954048140044
+    ],
+    "balancedAccuracy": 0.9210769827330887,
+    "macroF1": 0.9192564146905501,
+    "macroF195CI": [
+      0.8923210078514585,
+      0.9424497834605164
+    ],
+    "top3Accuracy": 0.975929978118162,
+    "logLoss": 0.3021554453403643,
+    "expectedCalibrationError": 0.06906035227487747,
+    "classificationReport": {
+      "Ayam Goreng": {
+        "precision": 0.90625,
+        "recall": 0.90625,
+        "f1-score": 0.90625,
+        "support": 32.0
+      },
+      "Bakso": {
+        "precision": 0.9545454545454546,
+        "recall": 0.9545454545454546,
+        "f1-score": 0.9545454545454546,
+        "support": 44.0
+      },
+      "Burger": {
+        "precision": 1.0,
+        "recall": 0.975,
+        "f1-score": 0.9873417721518988,
+        "support": 40.0
+      },
+      "French Fries": {
+        "precision": 0.90625,
+        "recall": 0.9354838709677419,
+        "f1-score": 0.9206349206349206,
+        "support": 31.0
+      },
+      "Gado-Gado": {
+        "precision": 0.84375,
+        "recall": 0.9642857142857143,
+        "f1-score": 0.9,
+        "support": 28.0
+      },
+      "Ikan Goreng": {
+        "precision": 0.9642857142857143,
+        "recall": 0.8709677419354839,
+        "f1-score": 0.9152542372881356,
+        "support": 31.0
+      },
+      "Mie Goreng": {
+        "precision": 0.9629629629629629,
+        "recall": 0.7878787878787878,
+        "f1-score": 0.8666666666666667,
+        "support": 33.0
+      },
+      "Nasi Goreng": {
+        "precision": 0.8947368421052632,
+        "recall": 0.8717948717948718,
+        "f1-score": 0.8831168831168831,
+        "support": 39.0
+      },
+      "Nasi Padang": {
+        "precision": 0.9615384615384616,
+        "recall": 0.8928571428571429,
+        "f1-score": 0.9259259259259259,
+        "support": 28.0
+      },
+      "Pizza": {
+        "precision": 0.967741935483871,
+        "recall": 0.9375,
+        "f1-score": 0.9523809523809523,
+        "support": 32.0
+      },
+      "Rawon": {
+        "precision": 0.9354838709677419,
+        "recall": 0.9354838709677419,
+        "f1-score": 0.9354838709677419,
+        "support": 31.0
+      },
+      "Rendang": {
+        "precision": 0.8275862068965517,
+        "recall": 0.96,
+        "f1-score": 0.8888888888888888,
+        "support": 25.0
+      },
+      "Sate": {
+        "precision": 1.0,
+        "recall": 0.9696969696969697,
+        "f1-score": 0.9846153846153847,
+        "support": 33.0
+      },
+      "Soto": {
+        "precision": 0.7777777777777778,
+        "recall": 0.9333333333333333,
+        "f1-score": 0.8484848484848485,
+        "support": 30.0
+      },
+      "accuracy": 0.9212253829321663,
+      "macro avg": {
+        "precision": 0.9216363733259856,
+        "recall": 0.9210769827330887,
+        "f1-score": 0.9192564146905501,
+        "support": 457.0
+      },
+      "weighted avg": {
+        "precision": 0.9260348558578732,
+        "recall": 0.9212253829321663,
+        "f1-score": 0.9217045623510742,
+        "support": 457.0
+      }
+    },
+    "confusionMatrix": [
+      [
+        29,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        0,
+        0
+      ],
+      [
+        0,
+        42,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      [
+        0,
+        0,
+        39,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      [
+        1,
+        0,
+        0,
+        29,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        27,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        27,
+        0,
+        0,
+        1,
+        0,
+        0,
+        1,
+        0,
+        2
+      ],
+      [
+        0,
+        1,
+        0,
+        2,
+        1,
+        0,
+        26,
+        2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        1,
+        34,
+        0,
+        0,
+        1,
+        0,
+        0,
+        2
+      ],
+      [
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        25,
+        0,
+        0,
+        1,
+        0,
+        1
+      ],
+      [
+        0,
+        1,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        30,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        29,
+        1,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        24,
+        0,
+        0
+      ],
+      [
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        32,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        28
+      ]
+    ],
+    "classNames": [
+      "Ayam Goreng",
+      "Bakso",
+      "Burger",
+      "French Fries",
+      "Gado-Gado",
+      "Ikan Goreng",
+      "Mie Goreng",
+      "Nasi Goreng",
+      "Nasi Padang",
+      "Pizza",
+      "Rawon",
+      "Rendang",
+      "Sate",
+      "Soto"
+    ],
+    "split": "validation",
+    "samples": 457,
+    "loss": 0.6501549482345581
+  },
+  "evaluationSplit": "test",
+  "evaluationIsIndependent": true,
+  "evaluation": {
+    "accuracy": 0.930379746835443,
+    "accuracy95CI": [
+      0.9071729957805907,
+      0.9535864978902954
+    ],
+    "balancedAccuracy": 0.9263317479576968,
+    "macroF1": 0.9258344843871995,
+    "macroF195CI": [
+      0.8982100461146383,
+      0.9483069921418701
+    ],
+    "top3Accuracy": 0.989451476793249,
+    "logLoss": 0.2716438037143779,
+    "expectedCalibrationError": 0.05534806574079355,
+    "classificationReport": {
+      "Ayam Goreng": {
+        "precision": 0.7837837837837838,
+        "recall": 0.8787878787878788,
+        "f1-score": 0.8285714285714286,
+        "support": 33.0
+      },
+      "Bakso": {
+        "precision": 0.9761904761904762,
+        "recall": 0.9318181818181818,
+        "f1-score": 0.9534883720930233,
+        "support": 44.0
+      },
+      "Burger": {
+        "precision": 1.0,
+        "recall": 0.9777777777777777,
+        "f1-score": 0.9887640449438202,
+        "support": 45.0
+      },
+      "French Fries": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1-score": 1.0,
+        "support": 36.0
+      },
+      "Gado-Gado": {
+        "precision": 0.9354838709677419,
+        "recall": 0.9354838709677419,
+        "f1-score": 0.9354838709677419,
+        "support": 31.0
+      },
+      "Ikan Goreng": {
+        "precision": 0.9117647058823529,
+        "recall": 0.96875,
+        "f1-score": 0.9393939393939394,
+        "support": 32.0
+      },
+      "Mie Goreng": {
+        "precision": 0.9354838709677419,
+        "recall": 0.8529411764705882,
+        "f1-score": 0.8923076923076924,
+        "support": 34.0
+      },
+      "Nasi Goreng": {
+        "precision": 0.9,
+        "recall": 0.9,
+        "f1-score": 0.9,
+        "support": 40.0
+      },
+      "Nasi Padang": {
+        "precision": 0.8333333333333334,
+        "recall": 0.8333333333333334,
+        "f1-score": 0.8333333333333334,
+        "support": 24.0
+      },
+      "Pizza": {
+        "precision": 0.967741935483871,
+        "recall": 1.0,
+        "f1-score": 0.9836065573770492,
+        "support": 30.0
+      },
+      "Rawon": {
+        "precision": 0.9375,
+        "recall": 0.9375,
+        "f1-score": 0.9375,
+        "support": 32.0
+      },
+      "Rendang": {
+        "precision": 0.9090909090909091,
+        "recall": 0.8333333333333334,
+        "f1-score": 0.8695652173913043,
+        "support": 24.0
+      },
+      "Sate": {
+        "precision": 0.9714285714285714,
+        "recall": 0.918918918918919,
+        "f1-score": 0.9444444444444444,
+        "support": 37.0
+      },
+      "Soto": {
+        "precision": 0.9142857142857143,
+        "recall": 1.0,
+        "f1-score": 0.9552238805970149,
+        "support": 32.0
+      },
+      "accuracy": 0.930379746835443,
+      "macro avg": {
+        "precision": 0.9268633693867497,
+        "recall": 0.9263317479576968,
+        "f1-score": 0.9258344843871995,
+        "support": 474.0
+      },
+      "weighted avg": {
+        "precision": 0.9321742782723256,
+        "recall": 0.930379746835443,
+        "f1-score": 0.9305467630775135,
+        "support": 474.0
+      }
+    },
+    "confusionMatrix": [
+      [
+        29,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        1,
+        0,
+        2,
+        0,
+        0
+      ],
+      [
+        1,
+        41,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2
+      ],
+      [
+        0,
+        0,
+        44,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        36,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        29,
+        1,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        31,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        29,
+        3,
+        0,
+        0,
+        1,
+        0,
+        0,
+        1
+      ],
+      [
+        0,
+        1,
+        0,
+        0,
+        1,
+        0,
+        1,
+        36,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        3,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        20,
+        0,
+        1,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        30,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        0,
+        30,
+        0,
+        0,
+        0
+      ],
+      [
+        2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        20,
+        1,
+        0
+      ],
+      [
+        2,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        34,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        32
+      ]
+    ],
+    "classNames": [
+      "Ayam Goreng",
+      "Bakso",
+      "Burger",
+      "French Fries",
+      "Gado-Gado",
+      "Ikan Goreng",
+      "Mie Goreng",
+      "Nasi Goreng",
+      "Nasi Padang",
+      "Pizza",
+      "Rawon",
+      "Rendang",
+      "Sate",
+      "Soto"
+    ],
+    "split": "test",
+    "samples": 474,
+    "loss": 0.626064658164978
+  },
+  "tflite": {
+    "dynamic": {
+      "mode": "dynamic",
+      "file": "food_classifier_dynamic.tflite",
+      "sizeBytes": 3570392,
+      "sizeMiB": 3.405,
+      "sha256": "dd10516182482732a7e42ec701a30505e88c7eaaee75266228820402db7221a3",
+      "samples": 457,
+      "accuracy": 0.9146608315098468,
+      "macroF1": 0.9122123699327978,
+      "balancedAccuracy": 0.9147380835370467,
+      "expectedCalibrationError": 0.06355617891516153,
+      "kerasAccuracy": 0.9212253829321663,
+      "agreementWithKeras": 0.986870897155361,
+      "meanConfidence": 0.8564737000924493,
+      "input": {
+        "shape": [
+          1,
+          224,
+          224,
+          3
+        ],
+        "dtype": "<class 'numpy.float32'>",
+        "range": "[-1,1] RGB float32 (pre-normalized on device)"
+      },
+      "output": {
+        "shape": [
+          1,
+          14
+        ],
+        "dtype": "<class 'numpy.float32'>",
+        "activation": "softmax",
+        "classes": 14
+      },
+      "latencyDesktopMs": {
+        "median": 41.07440001098439,
+        "p95": 51.70047999708913,
+        "note": "CPU-only desktop timing; benchmark on target phones before release."
+      },
+      "evaluationSplit": "validation"
+    },
+    "fp16": {
+      "mode": "fp16",
+      "file": "food_classifier_fp16.tflite",
+      "sizeBytes": 6556232,
+      "sizeMiB": 6.253,
+      "sha256": "a6e0293d69d12529590fb11b0b116c7bf2739c2fd967c589a66a1857eca9c468",
+      "samples": 457,
+      "accuracy": 0.9212253829321663,
+      "macroF1": 0.9192564146905501,
+      "balancedAccuracy": 0.9210769827330887,
+      "expectedCalibrationError": 0.06926809088276042,
+      "kerasAccuracy": 0.9212253829321663,
+      "agreementWithKeras": 1.0,
+      "meanConfidence": 0.8570847571613491,
+      "input": {
+        "shape": [
+          1,
+          224,
+          224,
+          3
+        ],
+        "dtype": "<class 'numpy.float32'>",
+        "range": "[-1,1] RGB float32 (pre-normalized on device)"
+      },
+      "output": {
+        "shape": [
+          1,
+          14
+        ],
+        "dtype": "<class 'numpy.float32'>",
+        "activation": "softmax",
+        "classes": 14
+      },
+      "latencyDesktopMs": {
+        "median": 7.827800000086427,
+        "p95": 8.340209990274161,
+        "note": "CPU-only desktop timing; benchmark on target phones before release."
+      },
+      "evaluationSplit": "validation"
+    }
+  },
+  "tfliteTestEvaluation": {
+    "accuracy": 0.930379746835443,
+    "accuracy95CI": [
+      0.9071729957805907,
+      0.9535864978902954
+    ],
+    "balancedAccuracy": 0.9263317479576968,
+    "macroF1": 0.9258344843871995,
+    "macroF195CI": [
+      0.8982100461146383,
+      0.9483069921418701
+    ],
+    "top3Accuracy": 0.989451476793249,
+    "logLoss": 0.2714546959754686,
+    "expectedCalibrationError": 0.05938250487548868,
+    "classificationReport": {
+      "Ayam Goreng": {
+        "precision": 0.7837837837837838,
+        "recall": 0.8787878787878788,
+        "f1-score": 0.8285714285714286,
+        "support": 33.0
+      },
+      "Bakso": {
+        "precision": 0.9761904761904762,
+        "recall": 0.9318181818181818,
+        "f1-score": 0.9534883720930233,
+        "support": 44.0
+      },
+      "Burger": {
+        "precision": 1.0,
+        "recall": 0.9777777777777777,
+        "f1-score": 0.9887640449438202,
+        "support": 45.0
+      },
+      "French Fries": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1-score": 1.0,
+        "support": 36.0
+      },
+      "Gado-Gado": {
+        "precision": 0.9354838709677419,
+        "recall": 0.9354838709677419,
+        "f1-score": 0.9354838709677419,
+        "support": 31.0
+      },
+      "Ikan Goreng": {
+        "precision": 0.9117647058823529,
+        "recall": 0.96875,
+        "f1-score": 0.9393939393939394,
+        "support": 32.0
+      },
+      "Mie Goreng": {
+        "precision": 0.9354838709677419,
+        "recall": 0.8529411764705882,
+        "f1-score": 0.8923076923076924,
+        "support": 34.0
+      },
+      "Nasi Goreng": {
+        "precision": 0.9,
+        "recall": 0.9,
+        "f1-score": 0.9,
+        "support": 40.0
+      },
+      "Nasi Padang": {
+        "precision": 0.8333333333333334,
+        "recall": 0.8333333333333334,
+        "f1-score": 0.8333333333333334,
+        "support": 24.0
+      },
+      "Pizza": {
+        "precision": 0.967741935483871,
+        "recall": 1.0,
+        "f1-score": 0.9836065573770492,
+        "support": 30.0
+      },
+      "Rawon": {
+        "precision": 0.9375,
+        "recall": 0.9375,
+        "f1-score": 0.9375,
+        "support": 32.0
+      },
+      "Rendang": {
+        "precision": 0.9090909090909091,
+        "recall": 0.8333333333333334,
+        "f1-score": 0.8695652173913043,
+        "support": 24.0
+      },
+      "Sate": {
+        "precision": 0.9714285714285714,
+        "recall": 0.918918918918919,
+        "f1-score": 0.9444444444444444,
+        "support": 37.0
+      },
+      "Soto": {
+        "precision": 0.9142857142857143,
+        "recall": 1.0,
+        "f1-score": 0.9552238805970149,
+        "support": 32.0
+      },
+      "accuracy": 0.930379746835443,
+      "macro avg": {
+        "precision": 0.9268633693867497,
+        "recall": 0.9263317479576968,
+        "f1-score": 0.9258344843871995,
+        "support": 474.0
+      },
+      "weighted avg": {
+        "precision": 0.9321742782723256,
+        "recall": 0.930379746835443,
+        "f1-score": 0.9305467630775135,
+        "support": 474.0
+      }
+    },
+    "confusionMatrix": [
+      [
+        29,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        1,
+        0,
+        2,
+        0,
+        0
+      ],
+      [
+        1,
+        41,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2
+      ],
+      [
+        0,
+        0,
+        44,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        36,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        29,
+        1,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        31,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        29,
+        3,
+        0,
+        0,
+        1,
+        0,
+        0,
+        1
+      ],
+      [
+        0,
+        1,
+        0,
+        0,
+        1,
+        0,
+        1,
+        36,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        3,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        20,
+        0,
+        1,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        30,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        0,
+        30,
+        0,
+        0,
+        0
+      ],
+      [
+        2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        20,
+        1,
+        0
+      ],
+      [
+        2,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        34,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        32
+      ]
+    ],
+    "classNames": [
+      "Ayam Goreng",
+      "Bakso",
+      "Burger",
+      "French Fries",
+      "Gado-Gado",
+      "Ikan Goreng",
+      "Mie Goreng",
+      "Nasi Goreng",
+      "Nasi Padang",
+      "Pizza",
+      "Rawon",
+      "Rendang",
+      "Sate",
+      "Soto"
+    ],
+    "split": "test",
+    "samples": 474,
+    "metricsRaw": {
+      "logLoss": 0.2714546959754686,
+      "expectedCalibrationError": 0.05938250487548868
+    },
+    "temperatureScaled": {
+      "temperature": 0.7000000000000002,
+      "accuracy": 0.930379746835443,
+      "macroF1": 0.9258344843871995,
+      "top3Accuracy": 0.989451476793249,
+      "logLoss": 0.2404664303395597,
+      "expectedCalibrationError": 0.02244033634759926
+    }
+  },
+  "calibration": {
+    "method": "temperature_scaling",
+    "fitSplit": "validation",
+    "temperature": 0.7000000000000002,
+    "validation": {
+      "samples": 457,
+      "expectedCalibrationErrorBefore": 0.06926808604880241,
+      "expectedCalibrationErrorAfter": 0.031797854412724244
+    },
+    "test": {
+      "independent": true,
+      "expectedCalibrationErrorBefore": 0.05938250487548868,
+      "expectedCalibrationErrorAfter": 0.02244033634759926
+    }
+  },
+  "primaryModel": "food_classifier.tflite",
+  "primaryQuantization": "fp16",
+  "primaryQuantizationPolicy": "auto; auto uses validation macro-F1 with a 0.5 pp tie window, then Keras agreement, accuracy, and size",
+  "primaryQuantizationSelection": "validation macro-F1 within 0.5 pp of best; chose highest Keras agreement (1.0000)",
+  "finalKerasModel": "best_model.keras",
+  "nutritionCatalog": {
+    "path": "nutrition_data.json",
+    "classes": 14,
+    "warnings": []
+  },
+  "durationSeconds": 1987.03,
+  "notes": [
+    "Model, fine-tuning stage, and quantization were selected on the validation split only.",
+    "The held-out test split was evaluated once after model selection was final.",
+    "95% confidence intervals are percentile bootstrap intervals from the reported split.",
+    "TFLite latency is measured on desktop CPU and must be re-benchmarked on target devices.",
+    "Nutrition values are estimates and are not medical advice."
+  ]
+}
