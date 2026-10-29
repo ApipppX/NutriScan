@@ -39,6 +39,11 @@ final class ScanResult {
   /// The result should be reviewed or retaken before it is trusted.
   bool get needsReview => isLowConfidence || isAmbiguous;
 
+  /// Review requirement for the currently displayed candidate. The top-1
+  /// heuristics do not cover a manually selected low-confidence alternative.
+  bool get selectedNeedsReview =>
+      needsReview || selected.confidence < AppConfig.confidenceWarningThreshold;
+
   /// Very low confidence: the photo may not contain a supported food at all.
   bool get isCriticallyUncertain =>
       topConfidence < AppConfig.confidenceCriticalThreshold;

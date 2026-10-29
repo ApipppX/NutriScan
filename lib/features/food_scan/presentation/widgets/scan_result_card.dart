@@ -10,6 +10,7 @@ import '../../domain/entities/scan_result.dart';
 import 'ai_confidence_panel.dart';
 import 'macro_donut_chart.dart';
 import 'nutrition_detail_sheet.dart';
+import 'nutrition_estimate_badge.dart';
 import 'nutrition_summary_table.dart';
 import 'portion_selector.dart';
 import 'supported_foods_sheet.dart';
@@ -56,6 +57,7 @@ final class ScanResultCard extends StatelessWidget {
       displayName: food.displayName,
     );
     final isTopPrediction = result.selectedIndex == 0;
+    final provisional = result.selectedNeedsReview;
 
     return Card(
       child: Padding(
@@ -105,7 +107,9 @@ final class ScanResultCard extends StatelessWidget {
                       Wrap(
                         spacing: 6,
                         runSpacing: 6,
+                        crossAxisAlignment: WrapCrossAlignment.center,
                         children: <Widget>[
+                          NutritionEstimateBadge(provisional: provisional),
                           _MetaChip(
                             icon: Icons.restaurant_rounded,
                             label: categoryLabel(food.category),
@@ -213,6 +217,7 @@ final class ScanResultCard extends StatelessWidget {
               portionFacts: facts,
               per100g: food.per100g,
               unit: unit,
+              provisional: provisional,
             ),
             const SizedBox(height: 20),
             Text(
@@ -260,6 +265,7 @@ final class ScanResultCard extends StatelessWidget {
                     context,
                     selected,
                     portionGrams: portionGrams,
+                    provisional: provisional,
                   ),
                   icon: const Icon(Icons.receipt_long_rounded, size: 19),
                   label: const Text('Rincian lengkap'),

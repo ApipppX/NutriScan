@@ -24,11 +24,11 @@ No image ever leaves the device. The Android manifest intentionally declares no 
 | Nutrition | Per-100 g values in `nutrition_data.json`, indexed to model outputs |
 | Inference | Long-lived background isolate; no per-scan interpreter reload |
 | UI | Material 3, Indonesian copy, light/dark theme, idle/loading/success/error states |
-| Result experience | Animated macro donut, two-reference nutrition table (portion + per 100 g/ml), confidence/margin review panel, supported-food list, retake action, portion stepper with quick presets |
+| Result experience | Animated macro donut, two-reference nutrition table (portion + per 100 g/ml), estimate badge with provisional state for uncertain results, confidence/margin review panel, supported-food list, retake action, portion stepper with quick presets |
 | Localization | English/snake_case model labels mapped to Indonesian names (`fried_noodles` → `Olahan Mie`) |
 | Daily diary | Persistent SQLite breakfast/lunch/dinner/snack log with localized names, per-portion nutrition, and daily history totals |
 | About/sources | In-app model metadata, closed-set limitations, nutrition provenance, privacy notes, and medical disclaimer |
-| Tests | 59 unit/widget tests + one Android device integration test |
+| Tests | 60 unit/widget tests + one Android device integration test |
 
 Classes: `Ayam Goreng`, `Bakso`, `Burger`, `French Fries`, `Gado-Gado`, `Ikan Goreng`, `Mie Goreng`, `Nasi Goreng`, `Nasi Padang`, `Pizza`, `Rawon`, `Rendang`, `Sate`, `Soto`.
 
@@ -120,7 +120,7 @@ The app loads the model and nutrition catalog during a bootstrap splash. Once re
 
 1. Tap **Kamera** or **Galeri**.
 2. The scanning line animates while inference runs in a background isolate.
-3. Review the localized food name, confidence/margin review panel, macro donut, and the nutrition table (per portion and per 100 g/ml).
+3. Review the localized food name, the **Estimasi** badge, confidence/margin review panel, macro donut, and the nutrition table (per portion and per 100 g/ml).
 4. If the result is uncertain, check the **Daftar makanan** sheet to confirm your food is one of the 14 supported classes, then retake the photo or pick an alternative.
 5. Adjust the portion with the stepper or the ½/1/1½/2-portion presets; every value recalculates instantly.
 6. Tap **Simpan ke Diary**, choose **Sarapan / Makan Siang / Makan Malam / Camilan**, and confirm. Uncertain results require an extra confirmation first.
@@ -132,7 +132,8 @@ No network is required after installation.
 - **Localized labels:** `FoodLabelLocalizer` normalizes model labels (`Fried Noodles`, `fried-noodles`, `fried_noodles`) and maps them to Indonesian names such as **Olahan Mie**.
 - **Uncertainty review:** confidence below 60% or a top-1/top-2 margin below 10 points triggers a review panel with **Daftar makanan** and **Foto Ulang**. Below 40% the copy explicitly warns that the photo may not contain a supported food.
 - **Supported-food transparency:** the result card lists all 14 classes and explains that the classifier has no `unknown` class, so these warnings are heuristics rather than validated out-of-distribution detection.
-- **Two-reference nutrition table:** every result shows nutrients for the selected portion next to catalog values per 100 g/ml, including macro energy shares, fiber, and sodium, with an estimation caption.
+- **Two-reference nutrition table:** every successful scan shows nutrients for the selected portion next to catalog values per 100 g/ml, including macro energy shares, fiber, and sodium. An **Estimasi** badge sits next to the food name/portion, and the caption states that values are computed from the catalog, not laboratory analysis, and may vary with the recipe.
+- **Provisional estimate state:** results that need review show **Estimasi sementara** instead of **Estimasi**; the numbers stay visible, but the caption asks the user to verify the food before saving.
 - **Save confirmation:** uncertain results must be confirmed before the meal picker opens, preventing accidental diary entries from weak predictions.
 - **Live portion modifier:** the stepper is backed by `ScanController`, so the result card and the sticky diary bar always show the same recalculated nutrition.
 - **Daily diary:** the sticky bottom bar opens a meal-category sheet and stores a `DiaryEntry` through `DiaryController` and `DiaryRepository`. Production uses `SqfliteDiaryRepository` backed by local SQLite, while unit tests use `InMemoryDiaryRepository`.
@@ -326,7 +327,7 @@ python ml_pipeline/generate_nutrition_data.py \
   --output /tmp/nutrition_check.json
 ```
 
-There are 59 unit/widget tests. They cover inference preprocessing and calibration, nutrition catalog parsing and provenance, portion scaling and daily-total addition, date formatting, label localization, meal-category suggestion, SQLite diary persistence, the diary history screen, the About screen, confidence/margin heuristics, the two-reference nutrition table, the supported-food sheet, the save-confirmation flow, the meal picker, and a regression guard that keeps the scan result visible above the diary action bar. The integration test builds a synthetic JPEG, loads the bundled TFLite model, runs one classification in the inference isolate (including calibrated confidence), and joins the result with the nutrition repository.
+There are 60 unit/widget tests. They cover inference preprocessing and calibration, nutrition catalog parsing and provenance, portion scaling and daily-total addition, date formatting, label localization, meal-category suggestion, SQLite diary persistence, the diary history screen, the About screen, confidence/margin heuristics, the estimate badge and provisional caption, the two-reference nutrition table, the supported-food sheet, the save-confirmation flow, the meal picker, failed-scan recovery without nutrition output, and a regression guard that keeps the scan result visible above the diary action bar. The integration test builds a synthetic JPEG, loads the bundled TFLite model, runs one classification in the inference isolate (including calibrated confidence), and joins the result with the nutrition repository.
 
 ---
 

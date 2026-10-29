@@ -16,6 +16,7 @@ final class NutritionSummaryTable extends StatelessWidget {
     required this.per100g,
     required this.unit,
     this.showCaption = true,
+    this.provisional = false,
   });
 
   /// Nutrition for the currently selected portion.
@@ -29,6 +30,9 @@ final class NutritionSummaryTable extends StatelessWidget {
 
   /// Shows the calculation/provenance note below the table.
   final bool showCaption;
+
+  /// Uses temporary-estimate wording while the food class is under review.
+  final bool provisional;
 
   @override
   Widget build(BuildContext context) {
@@ -119,8 +123,15 @@ final class NutritionSummaryTable extends StatelessWidget {
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
-                      'Per porsi dihitung dari nilai per 100 $unit. '
-                      'Estimasi katalog, bukan analisis laboratorium.',
+                      provisional
+                          ? 'Estimasi sementara. Dihitung dari nilai katalog '
+                                'per 100 g/ml dan porsi pilihanmu; verifikasi '
+                                'jenis makanan sebelum menyimpan. Bukan '
+                                'analisis laboratorium, hasil dapat berbeda '
+                                'tergantung resep.'
+                          : 'Dihitung dari nilai katalog per 100 g/ml dan '
+                                'porsi pilihanmu. Bukan analisis laboratorium; '
+                                'hasil dapat berbeda tergantung resep.',
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: scheme.onSurfaceVariant,
                         height: 1.4,

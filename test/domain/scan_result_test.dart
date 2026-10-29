@@ -84,6 +84,7 @@ void main() {
       expect(result.isLowConfidence, isFalse);
       expect(result.isAmbiguous, isFalse);
       expect(result.needsReview, isFalse);
+      expect(result.selectedNeedsReview, isFalse);
       expect(result.isCriticallyUncertain, isFalse);
     });
 
@@ -92,6 +93,8 @@ void main() {
 
       expect(result.isManualSelection, isTrue);
       expect(result.topConfidence, closeTo(0.8, 1e-9));
+      expect(result.needsReview, isFalse);
+      expect(result.selectedNeedsReview, isTrue);
     });
 
     test('flags low confidence, narrow margins, and critical uncertainty', () {

@@ -107,6 +107,15 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Olahan Mie'), findsOneWidget);
+    expect(find.text('Estimasi'), findsOneWidget);
+    expect(find.text('Estimasi sementara'), findsNothing);
+    expect(
+      find.text(
+        'Dihitung dari nilai katalog per 100 g/ml dan porsi pilihanmu. '
+        'Bukan analisis laboratorium; hasil dapat berbeda tergantung resep.',
+      ),
+      findsOneWidget,
+    );
     expect(find.text('87,4%'), findsOneWidget);
     expect(find.text('Keyakinan AI'), findsOneWidget);
     expect(find.text('Energi'), findsOneWidget);
@@ -131,6 +140,11 @@ void main() {
     expect(find.text('Total energi'), findsOneWidget);
     expect(find.text('Distribusi energi'), findsOneWidget);
     expect(find.text('Rincian zat gizi'), findsOneWidget);
+    expect(find.text('Estimasi'), findsWidgets);
+    expect(
+      find.textContaining('Dihitung dari nilai katalog per 100 g/ml'),
+      findsWidgets,
+    );
     expect(find.text('PER 100 G'), findsWidgets);
     expect(find.text('Natrium'), findsWidgets);
 
@@ -229,6 +243,12 @@ void main() {
 
     expect(find.text('Rendah'), findsOneWidget);
     expect(find.text('Hasil perlu diperiksa'), findsOneWidget);
+    expect(find.text('Estimasi sementara'), findsOneWidget);
+    expect(find.text('Estimasi'), findsNothing);
+    expect(
+      find.textContaining('verifikasi jenis makanan sebelum menyimpan'),
+      findsOneWidget,
+    );
 
     final supportedFoodsButton = find.text('Daftar makanan');
     expect(supportedFoodsButton, findsOneWidget);
@@ -288,6 +308,7 @@ void main() {
 
       expect(find.text('Sangat rendah'), findsOneWidget);
       expect(find.text('Makanan mungkin tidak dikenali'), findsOneWidget);
+      expect(find.text('Estimasi sementara'), findsOneWidget);
       expect(
         find.textContaining('bukan salah satu makanan yang didukung'),
         findsOneWidget,
@@ -336,6 +357,7 @@ void main() {
 
     expect(find.text('Ambigu'), findsOneWidget);
     expect(find.text('Hasil perlu diperiksa'), findsOneWidget);
+    expect(find.text('Estimasi sementara'), findsOneWidget);
     expect(
       find.textContaining('Dua prediksi teratas hampir sama kuat'),
       findsOneWidget,

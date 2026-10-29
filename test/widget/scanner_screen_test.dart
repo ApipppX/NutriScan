@@ -47,6 +47,22 @@ final class _FakeClassifier implements FoodClassifier {
   Future<void> dispose() async {}
 }
 
+final class _FailingClassifier implements FoodClassifier {
+  @override
+  Future<void> initialize() async {}
+
+  @override
+  Future<List<FoodRecognition>> classify(
+    Uint8List imageBytes, {
+    int topK = 3,
+  }) async {
+    throw StateError('Simulated inference failure.');
+  }
+
+  @override
+  Future<void> dispose() async {}
+}
+
 final class _FakeNutritionRepository implements NutritionRepository {
   static const FoodNutrition _food = FoodNutrition(
     classIndex: 4,
@@ -82,6 +98,7 @@ final class _FakeNutritionRepository implements NutritionRepository {
 Future<ProviderContainer> _pumpScanner(
   WidgetTester tester, {
   double confidence = 0.87,
+  FoodClassifier? classifier,
 }) async {
   await tester.binding.setSurfaceSize(const Size(390, 844));
   addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -90,7 +107,7 @@ Future<ProviderContainer> _pumpScanner(
     overrides: [
       scanFoodUseCaseProvider.overrideWithValue(
         ScanFoodUseCase(
-          _FakeClassifier(confidence: confidence),
+          classifier ?? _FakeClassifier(confidence: confidence),
           _FakeNutritionRepository(),
         ),
       ),
@@ -142,6 +159,8 @@ void main() {
         .classifyBytes(_tinyPng);
     await tester.pumpAndSettle();
 
+    expect(find.text('Estimasi sementara'), findsOneWidget);
+
     await tester.tap(find.text('Simpan'));
     await tester.pumpAndSettle();
 
@@ -177,5 +196,27 @@ void main() {
       find.text('Pilih waktu makan agar asupan harianmu tercatat rapi.'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('failed scan shows recovery UI without any nutrition estimate', (
+    tester,
+  ) async {
+    final container = await _pumpScanner(
+      tester,
+      classifier: _FailingClassifier(),
+    );
+
+    await container
+        .read(scanControllerProvider.notifier)
+        .classifyBytes(_tinyPng);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Belum berhasil'), findsOneWidget);
+    expect(find.text('Coba lagi'), findsOneWidget);
+    expect(find.text('Ringkasan gizi'), findsNothing);
+    expect(find.text('Estimasi'), findsNothing);
+    expect(find.text('Estimasi sementara'), findsNothing);
+    expect(find.text('Energi'), findsNothing);
+    expect(find.text('Simpan'), findsNothing);
   });
 }

@@ -119,7 +119,7 @@ final class _ScannerScreenState extends ConsumerState<ScannerScreen> {
   /// written to the diary. The classifier has no "unknown" class, so this is
   /// the point where the user acknowledges the limitation.
   Future<bool> _confirmUncertainResult(ScanSuccessState state) async {
-    if (!state.result.needsReview) return true;
+    if (!state.result.selectedNeedsReview) return true;
 
     final candidate = state.result.selected;
     final displayName = FoodLabelLocalizer.resolve(

@@ -5,6 +5,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../domain/entities/food_candidate.dart';
 import 'macro_energy_bar.dart';
+import 'nutrition_estimate_badge.dart';
 import 'nutrition_summary_table.dart';
 
 /// Opens the read-only nutrition breakdown for the current portion.
@@ -15,13 +16,17 @@ Future<void> showNutritionDetailSheet(
   BuildContext context,
   FoodCandidate candidate, {
   required int portionGrams,
+  bool provisional = false,
 }) {
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
-    builder: (BuildContext context) =>
-        _NutritionDetailSheet(candidate: candidate, portionGrams: portionGrams),
+    builder: (BuildContext context) => _NutritionDetailSheet(
+      candidate: candidate,
+      portionGrams: portionGrams,
+      provisional: provisional,
+    ),
   );
 }
 
@@ -29,10 +34,14 @@ final class _NutritionDetailSheet extends StatelessWidget {
   const _NutritionDetailSheet({
     required this.candidate,
     required this.portionGrams,
+    this.provisional = false,
   });
 
   final FoodCandidate candidate;
   final int portionGrams;
+
+  /// Shows the temporary-estimate state while the food class is uncertain.
+  final bool provisional;
 
   @override
   Widget build(BuildContext context) {
@@ -84,7 +93,14 @@ final class _NutritionDetailSheet extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style: textTheme.titleLarge,
                           ),
-                          const SizedBox(height: 2),
+                          const SizedBox(height: 6),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: NutritionEstimateBadge(
+                              provisional: provisional,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
                           Text(
                             '${categoryLabel(food.category)} · '
                             '${formatPercent(candidate.confidence)} keyakinan',
@@ -196,29 +212,7 @@ final class _NutritionDetailSheet extends StatelessWidget {
                   portionFacts: facts,
                   per100g: food.per100g,
                   unit: unit,
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Icon(
-                      Icons.info_outline_rounded,
-                      size: 16,
-                      color: scheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 7),
-                    Expanded(
-                      child: Text(
-                        'Nilai gizi adalah estimasi dan dapat berbeda tergantung '
-                        'resep, bahan, serta ukuran porsi. Bukan pengganti '
-                        'saran medis.',
-                        style: textTheme.bodySmall?.copyWith(
-                          color: scheme.onSurfaceVariant,
-                          height: 1.45,
-                        ),
-                      ),
-                    ),
-                  ],
+                  provisional: provisional,
                 ),
                 const SizedBox(height: 20),
                 FilledButton(
