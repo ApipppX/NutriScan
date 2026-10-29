@@ -1,12 +1,12 @@
 {
   "schemaVersion": 1,
-  "modelVersion": "2.0.0",
-  "modelSha256": "d2d5ed50a15643f3e91830bc01c39b97d973b653c76071e22831233baca30d56",
-  "generatedAt": "2026-10-22T08:41:34Z",
+  "modelVersion": "2.2.0",
+  "modelSha256": "a6e0293d69d12529590fb11b0b116c7bf2739c2fd967c589a66a1857eca9c468",
+  "generatedAt": "2026-10-28T07:28:28Z",
   "referenceAmount": 100,
   "referenceUnit": "g",
   "defaultPortionGrams": 100,
-  "classCount": 13,
+  "classCount": 14,
   "classes": [
     {
       "index": 0,
@@ -22,16 +22,39 @@
       ],
       "defaultPortionGrams": 150,
       "nutritionPer100g": {
-        "caloriesKcal": 260.0,
-        "proteinG": 27.0,
-        "carbohydrateG": 6.0,
-        "fatG": 14.5,
-        "fiberG": 0.3,
-        "sodiumMg": 550.0
+        "caloriesKcal": 283.0,
+        "proteinG": 35.4,
+        "carbohydrateG": 0.9,
+        "fatG": 14.2,
+        "fiberG": 0.0,
+        "sodiumMg": 681.0
       }
     },
     {
       "index": 1,
+      "label": "Bakso",
+      "normalizedLabel": "bakso",
+      "displayName": "Bakso",
+      "emoji": "🍲",
+      "category": "main",
+      "aliases": [
+        "bakso",
+        "bakso_sapi",
+        "meatball_soup",
+        "mie_bakso"
+      ],
+      "defaultPortionGrams": 250,
+      "nutritionPer100g": {
+        "caloriesKcal": 76.0,
+        "proteinG": 4.1,
+        "carbohydrateG": 9.2,
+        "fatG": 2.5,
+        "fiberG": 0.5,
+        "sodiumMg": 480.0
+      }
+    },
+    {
+      "index": 2,
       "label": "Burger",
       "normalizedLabel": "burger",
       "displayName": "Burger",
@@ -44,19 +67,19 @@
       ],
       "defaultPortionGrams": 200,
       "nutritionPer100g": {
-        "caloriesKcal": 250.0,
-        "proteinG": 13.0,
-        "carbohydrateG": 30.0,
-        "fatG": 9.0,
-        "fiberG": 1.7,
-        "sodiumMg": 500.0
+        "caloriesKcal": 258.0,
+        "proteinG": 10.6,
+        "carbohydrateG": 32.5,
+        "fatG": 9.5,
+        "fiberG": 0.4,
+        "sodiumMg": 572.0
       }
     },
     {
-      "index": 2,
+      "index": 3,
       "label": "French Fries",
       "normalizedLabel": "french_fries",
-      "displayName": "French Fries",
+      "displayName": "Kentang Goreng",
       "emoji": "🍟",
       "category": "snack",
       "aliases": [
@@ -75,7 +98,7 @@
       }
     },
     {
-      "index": 3,
+      "index": 4,
       "label": "Gado-Gado",
       "normalizedLabel": "gado_gado",
       "displayName": "Gado-Gado",
@@ -87,16 +110,16 @@
       ],
       "defaultPortionGrams": 250,
       "nutritionPer100g": {
-        "caloriesKcal": 94.0,
-        "proteinG": 4.1,
-        "carbohydrateG": 9.5,
-        "fatG": 4.5,
-        "fiberG": 2.8,
+        "caloriesKcal": 137.0,
+        "proteinG": 6.1,
+        "carbohydrateG": 21.0,
+        "fatG": 3.2,
+        "fiberG": 1.1,
         "sodiumMg": 260.0
       }
     },
     {
-      "index": 4,
+      "index": 5,
       "label": "Ikan Goreng",
       "normalizedLabel": "ikan_goreng",
       "displayName": "Ikan Goreng",
@@ -118,7 +141,7 @@
       }
     },
     {
-      "index": 5,
+      "index": 6,
       "label": "Mie Goreng",
       "normalizedLabel": "mie_goreng",
       "displayName": "Mie Goreng",
@@ -140,7 +163,7 @@
       }
     },
     {
-      "index": 6,
+      "index": 7,
       "label": "Nasi Goreng",
       "normalizedLabel": "nasi_goreng",
       "displayName": "Nasi Goreng",
@@ -162,7 +185,7 @@
       }
     },
     {
-      "index": 7,
+      "index": 8,
       "label": "Nasi Padang",
       "normalizedLabel": "nasi_padang",
       "displayName": "Nasi Padang",
@@ -184,7 +207,7 @@
       }
     },
     {
-      "index": 8,
+      "index": 9,
       "label": "Pizza",
       "normalizedLabel": "pizza",
       "displayName": "Pizza",
@@ -206,7 +229,7 @@
       }
     },
     {
-      "index": 9,
+      "index": 10,
       "label": "Rawon",
       "normalizedLabel": "rawon",
       "displayName": "Rawon",
@@ -219,16 +242,16 @@
       ],
       "defaultPortionGrams": 300,
       "nutritionPer100g": {
-        "caloriesKcal": 130.0,
-        "proteinG": 10.0,
-        "carbohydrateG": 5.0,
-        "fatG": 8.0,
+        "caloriesKcal": 60.0,
+        "proteinG": 5.4,
+        "carbohydrateG": 4.0,
+        "fatG": 2.5,
         "fiberG": 0.4,
         "sodiumMg": 620.0
       }
     },
     {
-      "index": 10,
+      "index": 11,
       "label": "Rendang",
       "normalizedLabel": "rendang",
       "displayName": "Rendang",
@@ -243,14 +266,14 @@
       "nutritionPer100g": {
         "caloriesKcal": 193.0,
         "proteinG": 22.6,
-        "carbohydrateG": 5.2,
-        "fatG": 10.9,
-        "fiberG": 1.1,
+        "carbohydrateG": 7.8,
+        "fatG": 7.9,
+        "fiberG": 0.0,
         "sodiumMg": 480.0
       }
     },
     {
-      "index": 11,
+      "index": 12,
       "label": "Sate",
       "normalizedLabel": "sate",
       "displayName": "Sate Ayam",
@@ -273,7 +296,7 @@
       }
     },
     {
-      "index": 12,
+      "index": 13,
       "label": "Soto",
       "normalizedLabel": "soto",
       "displayName": "Soto",
@@ -287,15 +310,23 @@
       ],
       "defaultPortionGrams": 300,
       "nutritionPer100g": {
-        "caloriesKcal": 110.0,
-        "proteinG": 7.0,
-        "carbohydrateG": 8.0,
-        "fatG": 5.5,
-        "fiberG": 0.5,
+        "caloriesKcal": 85.0,
+        "proteinG": 4.1,
+        "carbohydrateG": 4.6,
+        "fatG": 5.6,
+        "fiberG": 0.3,
         "sodiumMg": 480.0
       }
     }
   ],
   "warnings": [],
-  "disclaimer": "Nutrition values are estimates and may vary by recipe, portion, and ingredients. This application is not a medical device."
+  "disclaimer": "Nutrition values are estimates and may vary by recipe, portion, and ingredients. This application is not a medical device.",
+  "provenance": {
+    "sourceType": "estimation",
+    "sourceCode": "TKPI-2017;USDA-FDC-173292;USDA-FDC-170698;STANDARD-RECIPE",
+    "sourcePage": "multiple",
+    "sourceUrl": "https://repository.kemkes.go.id/book/668",
+    "verifiedAt": "2026-10-28",
+    "note": "Nilai per 100 g adalah estimasi universal. Nilai TKPI/USDA dipakai bila ada entri representatif; hidangan komposit tanpa entri representatif memakai estimasi resep standar. Natrium yang tidak tersedia di TKPI tetap merupakan estimasi."
+  }
 }

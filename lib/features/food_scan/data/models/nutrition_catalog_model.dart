@@ -1,5 +1,6 @@
 import '../../domain/entities/food_nutrition.dart';
 import '../../domain/entities/nutrition_facts.dart';
+import '../../domain/entities/nutrition_provenance.dart';
 
 /// JSON DTOs live in the data layer so domain entities remain transport-free.
 final class NutritionCatalogModel {
@@ -7,6 +8,12 @@ final class NutritionCatalogModel {
     required this.schemaVersion,
     required this.modelVersion,
     required this.classes,
+    this.modelSha256,
+    this.generatedAt,
+    this.referenceAmount = 100,
+    this.referenceUnit = 'g',
+    this.disclaimer,
+    this.provenance,
   });
 
   factory NutritionCatalogModel.fromJson(Map<String, dynamic> json) {
@@ -17,6 +24,29 @@ final class NutritionCatalogModel {
       );
     }
     final modelVersion = _requireString(json['modelVersion'], 'modelVersion');
+
+    final provenanceRaw = json['provenance'];
+    NutritionProvenanceModel? provenance;
+    if (provenanceRaw != null) {
+      if (provenanceRaw is! Map<String, dynamic>) {
+        throw const FormatException('"provenance" must be an object.');
+      }
+      provenance = NutritionProvenanceModel.fromJson(provenanceRaw);
+    }
+
+    final referenceAmountRaw = json['referenceAmount'];
+    final referenceAmount = referenceAmountRaw == null
+        ? 100
+        : _requireInt(referenceAmountRaw, 'referenceAmount');
+    if (referenceAmount <= 0) {
+      throw const FormatException('"referenceAmount" must be positive.');
+    }
+    final referenceUnitRaw = json['referenceUnit'];
+    final referenceUnit =
+        referenceUnitRaw is String && referenceUnitRaw.trim().isNotEmpty
+        ? referenceUnitRaw.trim()
+        : 'g';
+
     final rawClasses = json['classes'];
     if (rawClasses is! List || rawClasses.isEmpty) {
       throw const FormatException('"classes" must be a non-empty array.');
@@ -55,12 +85,63 @@ final class NutritionCatalogModel {
       schemaVersion: schemaVersion,
       modelVersion: modelVersion,
       classes: List<NutritionEntryModel>.unmodifiable(classes),
+      modelSha256: _optionalString(json['modelSha256']),
+      generatedAt: _optionalString(json['generatedAt']),
+      referenceAmount: referenceAmount,
+      referenceUnit: referenceUnit,
+      disclaimer: _optionalString(json['disclaimer']),
+      provenance: provenance,
     );
   }
 
   final int schemaVersion;
   final String modelVersion;
+  final String? modelSha256;
+  final String? generatedAt;
+  final int referenceAmount;
+  final String referenceUnit;
+  final String? disclaimer;
+  final NutritionProvenanceModel? provenance;
   final List<NutritionEntryModel> classes;
+}
+
+/// Data-layer representation of the universal nutrition provenance block.
+final class NutritionProvenanceModel {
+  const NutritionProvenanceModel({
+    required this.sourceType,
+    required this.sourceCode,
+    required this.sourcePage,
+    required this.sourceUrl,
+    required this.verifiedAt,
+    this.note = '',
+  });
+
+  factory NutritionProvenanceModel.fromJson(Map<String, dynamic> json) {
+    return NutritionProvenanceModel(
+      sourceType: _requireString(json['sourceType'], 'sourceType'),
+      sourceCode: _requireString(json['sourceCode'], 'sourceCode'),
+      sourcePage: _requireString(json['sourcePage'], 'sourcePage'),
+      sourceUrl: _requireString(json['sourceUrl'], 'sourceUrl'),
+      verifiedAt: _requireString(json['verifiedAt'], 'verifiedAt'),
+      note: _optionalString(json['note']) ?? '',
+    );
+  }
+
+  final String sourceType;
+  final String sourceCode;
+  final String sourcePage;
+  final String sourceUrl;
+  final String verifiedAt;
+  final String note;
+
+  NutritionProvenance toDomain() => NutritionProvenance(
+    sourceType: sourceType,
+    sourceCode: sourceCode,
+    sourcePage: sourcePage,
+    sourceUrl: sourceUrl,
+    verifiedAt: verifiedAt,
+    note: note,
+  );
 }
 
 final class NutritionEntryModel {
@@ -182,4 +263,9 @@ double _optionalNumber(Object? value) {
 String _requireString(Object? value, String field) {
   if (value is String && value.trim().isNotEmpty) return value.trim();
   throw FormatException('"$field" must be a non-empty string, got $value.');
+}
+
+String? _optionalString(Object? value) {
+  if (value is String && value.trim().isNotEmpty) return value.trim();
+  return null;
 }

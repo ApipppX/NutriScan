@@ -5,9 +5,9 @@ NutriScan is a fully offline food image classifier and nutrition estimator:
 - **Flutter app** (Android/iOS) that picks or captures a photo, classifies it with an on-device TFLite model, and shows calories + macronutrients per adjustable portion.
 - **Python/TensorFlow pipeline** that transfer-trains MobileNetV3, evaluates it, exports dynamic-range and FP16 TFLite variants, and generates the label/nutrition metadata the app consumes.
 
-No image ever leaves the device. The Android manifest intentionally declares no `INTERNET` permission.
+No image ever leaves the device. The Android manifest intentionally declares no `INTERNET` permission, and explicitly removes legacy storage/phone permissions implied by the TFLite GPU AAR.
 
-> **Model data:** the bundled model was trained on a **13-class food dataset** supplied for this project. The source images are not included in this repository. Verify dataset licensing, nutrition values, and real-world accuracy before shipping.
+> **Model data:** the bundled model combines the public Kaggle [Indonesian Food Dataset](https://www.kaggle.com/datasets/rizkyyk/dataset-food-classification) (13 classes, MIT, web-collected by its uploader) with the Mendeley [Indonesian Food Image](https://data.mendeley.com/datasets/vtjd68bmwt/1) dataset (six supplemental classes and Bakso, CC BY 4.0, web-collected by its creator). The source images are not included in this repository. These are the licenses declared by the dataset providers; image copyright remains with the original owners. Verify licensing, nutrition values, and real-world accuracy before shipping.
 
 ---
 
@@ -17,7 +17,7 @@ No image ever leaves the device. The Android manifest intentionally declares no 
 | --- | --- |
 | Model | MobileNetV3-Large, ImageNet weights, frozen-backbone transfer learning + fine-tune |
 | Input | `float32 [1, 224, 224, 3]`, RGB, normalized to `[-1, 1]` |
-| Output | `float32 [1, 13]` softmax probabilities, confidence-calibrated on-device |
+| Output | `float32 [1, 14]` softmax probabilities, confidence-calibrated on-device |
 | App model | FP16 TFLite, **6.25 MiB**, selected on validation macro-F1 + Keras-agreement tie-break |
 | Optional model | Dynamic-range TFLite, **3.41 MiB** |
 | Labels | Alphabetical class-folder order, mirrored by `class_names.json` |
@@ -26,23 +26,25 @@ No image ever leaves the device. The Android manifest intentionally declares no 
 | UI | Material 3, Indonesian copy, light/dark theme, idle/loading/success/error states |
 | Result experience | Animated macro donut, confidence percentage bar, retake action, portion stepper with quick presets, complete per-serving facts |
 | Localization | English/snake_case model labels mapped to Indonesian names (`fried_noodles` → `Olahan Mie`) |
-| Daily diary | Offline breakfast/lunch/dinner/snack log with localized names and per-portion nutrition |
-| Tests | 40 unit/widget tests + one Android device integration test |
+| Daily diary | Persistent SQLite breakfast/lunch/dinner/snack log with localized names, per-portion nutrition, and daily history totals |
+| About/sources | In-app model metadata, nutrition provenance, privacy notes, and medical disclaimer |
+| Tests | 51 unit/widget tests + one Android device integration test |
 
-Classes: `Ayam Goreng`, `Burger`, `French Fries`, `Gado-Gado`, `Ikan Goreng`, `Mie Goreng`, `Nasi Goreng`, `Nasi Padang`, `Pizza`, `Rawon`, `Rendang`, `Sate`, `Soto`.
+Classes: `Ayam Goreng`, `Bakso`, `Burger`, `French Fries`, `Gado-Gado`, `Ikan Goreng`, `Mie Goreng`, `Nasi Goreng`, `Nasi Padang`, `Pizza`, `Rawon`, `Rendang`, `Sate`, `Soto`.
 
 ### Current model performance
 
-Measured on the held-out, deduplicated test split (430 images):
+Measured on the held-out, deduplicated test split (474 images):
 
 | Metric | Value |
 | --- | --- |
-| Keras test accuracy | **93.72%** (95% CI 91.40–96.05%) |
-| Keras macro F1 | **93.22%** |
-| Top-3 test accuracy | **98.60%** |
-| FP16 TFLite full-test accuracy | **93.72%** |
-| Dynamic-range TFLite full-test accuracy | **92.56%** |
-| Test calibration error (ECE) | 6.16% → **2.24%** after temperature scaling |
+| Keras test accuracy | **93.04%** (95% CI 90.72–95.36%) |
+| Keras macro F1 | **92.58%** (95% CI 89.82–94.83%) |
+| Top-3 test accuracy | **98.95%** |
+| FP16 TFLite full-test accuracy | **93.04%** |
+| Dynamic-range TFLite full-test accuracy | **92.83%** |
+| Test calibration error (ECE) | 5.94% → **2.24%** after temperature scaling |
+| Bakso test F1 | **95.35%** |
 | FP16 / dynamic size | 6.25 / 3.41 MiB |
 
 The FP16 app model reproduces Keras exactly on validation (100% top-1 agreement). Model, fine-tuning stage, and quantization were selected on the validation split only; the held-out test split was evaluated after selection was final. The larger MobileNetV3-Large model raises Keras test accuracy by about 4 points over the earlier Small model, at the cost of a larger download (6.25 MiB vs 2.16 MiB).
@@ -68,10 +70,11 @@ These numbers describe this dataset, not universal food recognition accuracy. Se
 │   │   └── app_bootstrap_gate.dart   # splash / retry while model loads
 │   ├── core/                         # theme, constants, errors, logging, formatters, localization
 │   └── features/
+│       ├── about/                    # provenance + model metadata screen
 │       ├── daily_diary/
 │       │   ├── domain/               # MealType, DiaryEntry, DiaryRepository contract
-│       │   ├── data/                 # in-memory diary repository
-│       │   └── presentation/         # DiaryController + meal category sheet
+│       │   ├── data/                 # in-memory + SQLite diary repositories
+│       │   └── presentation/         # DiaryController, history screen, meal category sheet
 │       └── food_scan/
 │           ├── domain/               # entities, repository contracts, ScanFoodUseCase
 │           ├── data/
@@ -129,7 +132,7 @@ No network is required after installation.
 - **Localized labels:** `FoodLabelLocalizer` normalizes model labels (`Fried Noodles`, `fried-noodles`, `fried_noodles`) and maps them to Indonesian names such as **Olahan Mie**.
 - **Confidence bar:** the result card shows a percentage bar with a high/medium/low level; below 60% it reveals an inline **Foto Ulang** action.
 - **Live portion modifier:** the stepper is backed by `ScanController`, so the result card and the sticky diary bar always show the same recalculated nutrition.
-- **Daily diary:** the sticky bottom bar opens a meal-category sheet and stores a `DiaryEntry` through `DiaryController` and `DiaryRepository`. The current implementation is in-memory and ready to be swapped for sqflite.
+- **Daily diary:** the sticky bottom bar opens a meal-category sheet and stores a `DiaryEntry` through `DiaryController` and `DiaryRepository`. Production uses `SqfliteDiaryRepository` backed by local SQLite, while unit tests use `InMemoryDiaryRepository`.
 
 ### Build
 
@@ -160,18 +163,24 @@ At least 3 images per class are required. A stratified split is made **per class
 If the dataset already has `train`, `valid`, and `test` folders, use them directly:
 
 ```text
-D:/Dataset Makanan 1GB/dataset_clean/
+D:/Dataset Makanan 1GB/dataset_clean_mendeley_bakso/
   train/<class>/*.jpg
   valid/<class>/*.jpg
   test/<class>/*.jpg
 ```
 
-The current training dataset stays **outside the repository** at
-`D:\Dataset Makanan 1GB\dataset_clean`. The pipeline reads it in place and does
-not copy the images into the project; only the trained model and metadata are
-written to `ml_pipeline/output` and `assets`.
+The current 14-class training dataset stays **outside the repository** at
+`D:\Dataset Makanan 1GB\dataset_clean_mendeley_bakso` (the folder name reflects
+the later Mendeley additions; the initial 13 classes come from Kaggle). The
+pipeline reads it in place and does not copy the images into the project; only
+the trained model and metadata are written to `ml_pipeline/output_bakso` and
+`assets`.
 
-Scraped data often contains the same photo in multiple splits, which inflates evaluation. The included cleaner groups near-duplicates globally with a perceptual dHash, keeps one representative per group, and excludes cross-class collisions. It uses hard links by default, so it does not modify or duplicate the source files.
+The Bakso class was added to the initial 13-class Kaggle dataset using images
+from the Mendeley dataset with `ml_pipeline/add_class.py`; see
+[`ml_pipeline/README.md`](ml_pipeline/README.md) for the command and audit files.
+
+Web-collected data often contains the same photo in multiple splits, which inflates evaluation. The included cleaner groups near-duplicates globally with a perceptual dHash, keeps one representative per group, and excludes cross-class collisions. It uses hard links by default, so it does not modify or duplicate the source files.
 
 ```bash
 python ml_pipeline/clean_dataset.py \
@@ -211,10 +220,10 @@ Run from the repository root. The command below uses the existing split; omit `-
 
 ```bash
 python ml_pipeline/train_export.py \
-  --data-dir "D:/Dataset Makanan 1GB/dataset_clean/train" \
-  --val-dir "D:/Dataset Makanan 1GB/dataset_clean/valid" \
-  --test-dir "D:/Dataset Makanan 1GB/dataset_clean/test" \
-  --output-dir ml_pipeline/output \
+  --data-dir "D:/Dataset Makanan 1GB/dataset_clean_mendeley_bakso/train" \
+  --val-dir "D:/Dataset Makanan 1GB/dataset_clean_mendeley_bakso/valid" \
+  --test-dir "D:/Dataset Makanan 1GB/dataset_clean_mendeley_bakso/test" \
+  --output-dir ml_pipeline/output_bakso \
   --model mobilenetv3_large \
   --initial-epochs 18 \
   --fine-tune-epochs 10 \
@@ -225,18 +234,18 @@ python ml_pipeline/train_export.py \
   --quantization both \
   --primary-quantization auto \
   --tflite-eval-samples 0 \
-  --model-version 2.0.0 \
+  --model-version 2.2.0 \
   --flutter-assets-dir assets
 ```
 
-`--primary-quantization auto` selects on validation only: the best validation macro-F1 wins, and if candidates are within 0.5 percentage points, the variant with the highest Keras agreement is preferred. For this run FP16 and dynamic-range were within that tie window, so FP16 (100% Keras agreement) was copied to `food_classifier.tflite`. The test split is then evaluated once as a final check.
+`--primary-quantization auto` selects on validation only: the best validation macro-F1 wins, and if candidates are within 0.5 percentage points, the variant with the highest Keras agreement is preferred. For this run FP16 had the best validation macro-F1 and 100% Keras agreement, so it was copied to `food_classifier.tflite`. The test split is then evaluated once as a final check.
 
 `--tflite-eval-samples 0` audits every validation image instead of a random subset. Set a positive number only for quicker smoke runs.
 
 This produces:
 
 ```text
-ml_pipeline/output/
+ml_pipeline/output_bakso/
   best_model.keras
   food_classifier.tflite          # app primary (auto-selected, FP16 here)
   food_classifier_dynamic.tflite
@@ -260,7 +269,7 @@ When `--flutter-assets-dir assets` is passed, the app model and both JSON files 
 
 `ml_pipeline/nutrition_seed.json` is the editable source of truth. Each model class folder must have a matching seed key (case/spacing normalized). If a class is missing, metadata generation fails loudly instead of showing nutrition for the wrong food.
 
-Values are estimates per 100 g (or 100 ml for beverages). Replace them with verified data before production. The app shows a medical disclaimer.
+Values are universal estimates per 100 g (or 100 ml for beverages). They are anchored to TKPI 2017/2018 and USDA FoodData Central where a representative entry exists; composite dishes without a representative entry use standard-recipe estimates. The seed and generated catalog carry a universal `provenance` block. Add per-item provenance or documented recipes before production. The app shows a medical disclaimer.
 
 See [`ml_pipeline/README.md`](ml_pipeline/README.md) for the full pipeline reference and CLI flags.
 
@@ -314,30 +323,26 @@ python ml_pipeline/generate_nutrition_data.py \
   --output /tmp/nutrition_check.json
 ```
 
-There are 40 unit/widget tests. They cover inference preprocessing and calibration, nutrition catalog parsing, portion scaling, label localization, meal-category suggestion, diary saving, the confidence/portion result card, the meal picker, and a regression guard that keeps the scan result visible above the diary action bar. The integration test builds a synthetic JPEG, loads the bundled TFLite model, runs one classification in the inference isolate (including calibrated confidence), and joins the result with the nutrition repository.
+There are 51 unit/widget tests. They cover inference preprocessing and calibration, nutrition catalog parsing and provenance, portion scaling and daily-total addition, date formatting, label localization, meal-category suggestion, SQLite diary persistence, the diary history screen, the About screen, the confidence/portion result card, the meal picker, and a regression guard that keeps the scan result visible above the diary action bar. The integration test builds a synthetic JPEG, loads the bundled TFLite model, runs one classification in the inference isolate (including calibrated confidence), and joins the result with the nutrition repository.
 
 ---
 
-## Swapping in a database later
+## Persistence
 
-`NutritionRepository` is the only domain-facing catalog interface. The current `NutritionRepositoryImpl` builds O(1) maps from JSON at startup. To migrate to `sqflite`:
+The diary uses `SqfliteDiaryRepository` in `main.dart`, while unit tests keep the default `InMemoryDiaryRepository`. The SQLite table is created lazily on first use and stores the localized name, emoji, meal type, portion, full per-portion nutrition, confidence, and timestamp. `DiaryHistoryScreen` groups entries by day and computes daily calorie/macro totals from the persisted rows.
 
-1. Implement `NutritionRepository` (or a new `NutritionCatalogDataSource`) backed by SQLite.
-2. Provide it from `nutritionRepositoryProvider`.
-3. Keep the same `findByIndex` / `findByLabel` semantics and index/label normalization.
-
-No widget, controller, or use case changes are required.
-
-`DiaryRepository` follows the same pattern. Replace `InMemoryDiaryRepository` with a sqflite-backed implementation, update `diaryRepositoryProvider`, and keep `DiaryController.saveMeal` as the single write path. The result card, meal sheet, and diary action bar do not change.
+`NutritionRepository` remains a JSON-backed lookup. It is the only domain-facing catalog interface; migrating it to SQLite would require a new implementation of `findByIndex` / `findByLabel` with the same normalization, without changing widgets or use cases.
 
 ---
 
 ## Privacy & limitations
 
 - Photos are processed entirely on-device; there is no upload path or network permission.
+- The release manifest also contains no phone-state or external-storage permissions.
+- Diary entries are stored in a local SQLite database. There is no cloud sync or account system.
 - The model was trained on user-supplied web-style food photos. Verify dataset licensing and validate on your own target population before release.
-- The reported accuracy is held-out accuracy for this 13-class dataset; it is not a guarantee of accuracy for arbitrary photos.
-- Nutrition values are estimates per 100 g/ml and vary by recipe and portion.
+- The reported accuracy is held-out accuracy for this 14-class dataset; it is not a guarantee of accuracy for arbitrary photos.
+- Nutrition values are universal estimates per 100 g/ml, anchored to TKPI 2017/2018 and USDA FDC where available; composite dishes use standard-recipe estimates. Values vary by recipe and portion.
 - Desktop latency in `model_report.json` is informative only; benchmark on target phones.
 - NutriScan is not a medical device or a substitute for professional advice.
 
@@ -345,4 +350,4 @@ No widget, controller, or use case changes are required.
 
 ## Key dependencies
 
-`flutter_riverpod`, `tflite_flutter`, `image_picker`, `image`, `flutter_localizations`; Python: `tensorflow==2.21.0`, `scikit-learn`, `matplotlib`, `Pillow`.
+`flutter_riverpod`, `tflite_flutter`, `image_picker`, `image`, `sqflite`, `path`, `flutter_localizations`; tests: `sqflite_common_ffi`; Python: `tensorflow==2.21.0`, `scikit-learn`, `matplotlib`, `Pillow`.

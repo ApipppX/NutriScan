@@ -19,6 +19,23 @@ final class NutritionFacts {
        assert(fiberG >= 0),
        assert(sodiumMg >= 0);
 
+  static const NutritionFacts zero = NutritionFacts(
+    caloriesKcal: 0,
+    proteinG: 0,
+    carbohydrateG: 0,
+    fatG: 0,
+  );
+
+  /// Adds the nutrient amounts of two portions.
+  NutritionFacts operator +(NutritionFacts other) => NutritionFacts(
+    caloriesKcal: caloriesKcal + other.caloriesKcal,
+    proteinG: proteinG + other.proteinG,
+    carbohydrateG: carbohydrateG + other.carbohydrateG,
+    fatG: fatG + other.fatG,
+    fiberG: fiberG + other.fiberG,
+    sodiumMg: sodiumMg + other.sodiumMg,
+  );
+
   final double caloriesKcal;
   final double proteinG;
   final double carbohydrateG;

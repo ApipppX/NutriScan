@@ -35,3 +35,35 @@ String categoryLabel(String category) => switch (category) {
   'main' => 'Makanan utama',
   _ => 'Makanan',
 };
+
+const List<String> _monthAbbreviations = <String>[
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'Mei',
+  'Jun',
+  'Jul',
+  'Agu',
+  'Sep',
+  'Okt',
+  'Nov',
+  'Des',
+];
+
+/// Friendly label for a diary day, e.g. `Hari ini`, `Kemarin`, `28 Okt 2026`.
+String formatDiaryDay(DateTime date, {DateTime? now}) {
+  final reference = now ?? DateTime.now();
+  final day = DateTime(date.year, date.month, date.day);
+  final today = DateTime(reference.year, reference.month, reference.day);
+  final difference = today.difference(day).inDays;
+
+  if (difference == 0) return 'Hari ini';
+  if (difference == 1) return 'Kemarin';
+  return '${day.day} ${_monthAbbreviations[day.month - 1]} ${day.year}';
+}
+
+/// Local clock label in the same `HH.mm` style used by the meal picker.
+String formatClockTime(DateTime time) =>
+    '${time.hour.toString().padLeft(2, '0')}.'
+    '${time.minute.toString().padLeft(2, '0')}';

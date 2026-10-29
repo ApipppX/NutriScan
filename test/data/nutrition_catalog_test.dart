@@ -32,22 +32,10 @@ void main() {
 
   test('asset catalog matches the exported model contract', () {
     expect(catalog.schemaVersion, 1);
-    expect(catalog.classes, hasLength(13));
-    expect(catalog.classes.map((entry) => entry.label), <String>[
-      'Ayam Goreng',
-      'Burger',
-      'French Fries',
-      'Gado-Gado',
-      'Ikan Goreng',
-      'Mie Goreng',
-      'Nasi Goreng',
-      'Nasi Padang',
-      'Pizza',
-      'Rawon',
-      'Rendang',
-      'Sate',
-      'Soto',
-    ]);
+    final labels = (classNames['labels'] as List).cast<String>();
+    expect(labels, isNotEmpty);
+    expect(catalog.classes, hasLength(labels.length));
+    expect(catalog.classes.map((entry) => entry.label), labels);
     for (var index = 0; index < catalog.classes.length; index++) {
       final entry = catalog.classes[index];
       expect(entry.classIndex, index);
@@ -56,9 +44,35 @@ void main() {
     }
   });
 
+  test('asset catalog declares universal nutrition provenance', () {
+    final raw = jsonDecode(
+      File('assets/data/nutrition_data.json').readAsStringSync(),
+    ) as Map<String, dynamic>;
+    final provenance = raw['provenance'] as Map<String, dynamic>;
+
+    expect(provenance['sourceType'], 'estimation');
+    expect(provenance['sourceCode'], contains('TKPI-2017'));
+    expect(provenance['sourceUrl'], startsWith('https://'));
+    expect(provenance['verifiedAt'], isNotEmpty);
+    expect(provenance['note'], contains('estimasi'));
+  });
+
+  test('catalog model exposes provenance and model metadata', () {
+    expect(catalog.modelSha256, hasLength(64));
+    expect(catalog.referenceAmount, 100);
+    expect(catalog.referenceUnit, 'g');
+    expect(catalog.provenance, isNotNull);
+    final provenance = catalog.provenance!.toDomain();
+    expect(provenance.sourceType, 'estimation');
+    expect(provenance.isEstimation, isTrue);
+    expect(provenance.sources, contains('TKPI-2017'));
+    expect(provenance.sources, contains('STANDARD-RECIPE'));
+    expect(provenance.sourceUrl, startsWith('https://'));
+  });
+
   test('class names declare the model hash and calibration temperature', () {
     expect(classNames['schemaVersion'], 1);
-    expect(classNames['classCount'], 13);
+    expect(classNames['classCount'], catalog.classes.length);
     expect(classNames['labels'], catalog.classes.map((entry) => entry.label));
     expect(classNames['primaryModel'], 'food_classifier.tflite');
     expect(classNames['quantization'], anyOf('fp16', 'dynamic'));
@@ -75,11 +89,15 @@ void main() {
     final repository = NutritionRepositoryImpl(_FakeDataSource(catalog));
     await repository.initialize();
 
-    expect(repository.findByIndex(6)?.displayName, 'Nasi Goreng');
-    expect(repository.findByLabel('Nasi Goreng')?.classIndex, 6);
-    expect(repository.findByLabel('nasgor')?.classIndex, 6);
+    final nasiGorengIndex = catalog.classes.indexWhere(
+      (entry) => entry.label == 'Nasi Goreng',
+    );
+    expect(nasiGorengIndex, greaterThanOrEqualTo(0));
+    expect(repository.findByIndex(nasiGorengIndex)?.displayName, 'Nasi Goreng');
+    expect(repository.findByLabel('Nasi Goreng')?.classIndex, nasiGorengIndex);
+    expect(repository.findByLabel('nasgor')?.classIndex, nasiGorengIndex);
     expect(repository.findByLabel('tidak ada'), isNull);
-    expect(repository.entries, hasLength(13));
+    expect(repository.entries, hasLength(catalog.classes.length));
   });
 
   test('category drives the exported portion metadata', () {

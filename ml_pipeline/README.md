@@ -19,26 +19,28 @@ calories, so metadata generation fails instead of guessing.
 
 | Item | Value |
 | --- | --- |
-| Classes | 13 (`Ayam Goreng` … `Soto`) |
+| Classes | 14 (`Ayam Goreng`, `Bakso` … `Soto`) |
 | Architecture | MobileNetV3-Large, ImageNet weights, 18 frozen + 10 fine-tune epochs (last 60 layers), dropout 0.35 |
-| Dataset after global deduplication | 5,013 unique images: 4,170 train / 413 valid / 430 test |
-| Keras validation accuracy / macro F1 | **91.77% / 91.62%** |
-| Keras held-out test accuracy | **93.72%** (95% CI 91.40–96.05%) |
-| Keras macro F1 | **93.22%** |
-| Top-3 test accuracy | **98.60%** |
-| FP16 TFLite full-test accuracy | **93.72%** (independently re-evaluated on all 430 test images) |
-| Dynamic-range TFLite full-test accuracy | **92.56%** |
-| Test calibration error (ECE) | 6.16% → **2.24%** with T = 0.70 |
+| Dataset after deduplication and additions | 6,419 images: 5,488 train / 457 valid / 474 test (5,978 after deduplication + Mendeley additions, plus 441 Bakso) |
+| Keras validation accuracy / macro F1 | **92.12% / 91.93%** |
+| Keras held-out test accuracy | **93.04%** (95% CI 90.72–95.36%) |
+| Keras macro F1 | **92.58%** (95% CI 89.82–94.83%) |
+| Top-3 test accuracy | **98.95%** |
+| FP16 TFLite full-test accuracy | **93.04%** (independently re-evaluated on all 474 test images) |
+| Dynamic-range TFLite full-test accuracy | **92.83%** |
+| Test calibration error (ECE) | 5.94% → **2.24%** with T = 0.70 |
 | App model | FP16, **6.25 MiB** (validation-selected; 100% Keras agreement) |
-| Metadata | 13 labels, zero nutrition warnings |
+| Metadata | 14 labels, zero nutrition warnings |
 
 Model, fine-tuning stage, and quantization are selected on the validation split only.
-The held-out test split is evaluated once after selection is final. The FP16 and
-dynamic-range variants were within 0.5 pp validation macro-F1, so the tie-break
-selected FP16 because it reproduces Keras exactly on validation.
+The held-out test split is evaluated once after selection is final. FP16 had the
+best validation macro-F1 and reproduced Keras exactly, so it was selected as the
+app model. The dynamic-range variant remains available for size-constrained builds.
 
-The original source images are not part of the repository. These results describe
-this dataset only; validate on your own target distribution before release.
+The original source images are not part of the repository. The 13-class base
+dataset is the Kaggle *Indonesian Food Dataset* (MIT); the supplemental and Bakso
+images come from Mendeley *Indonesian Food Image* (CC BY 4.0). These results
+describe this dataset only; validate on your own target distribution before release.
 
 ---
 
@@ -50,6 +52,8 @@ this dataset only; validate on your own target distribution before release.
 | `generate_nutrition_data.py` | Standalone strict label → nutrition catalog generator |
 | `prepare_dummy_dataset.py` | Synthetic dataset generator for pipeline smoke tests only |
 | `clean_dataset.py` | Global near-duplicate cleanup for pre-split datasets (dHash; hard links by default) |
+| `merge_additions.py` | Safe external-data merge: copies an existing split, adds deduplicated images to train only |
+| `add_class.py` | Add a new class to a pre-split dataset with dHash dedup and a deterministic train/valid/test split |
 | `nutrition_seed.json` | Editable nutrition source values, per 100 g (or 100 ml) |
 | `requirements.txt` | Pinned TensorFlow + evaluation dependencies |
 
@@ -83,9 +87,10 @@ the Keras cache.
 The current dataset lives outside the repository:
 
 ```text
-D:/Dataset Makanan 1GB/dataset_clean/
+D:/Dataset Makanan 1GB/dataset_clean_mendeley_bakso/
   train/
     Ayam Goreng/0001.jpg
+    Bakso/0001.jpg
     Burger/0001.jpg
     Nasi Goreng/0001.jpg
     ...
@@ -158,6 +163,69 @@ default (no extra storage); add `--mode copy` if needed. Always use the cleaned
 `train`/`valid`/`test` folders for training. The emitted `dataset_audit.json`
 records counts per class and split.
 
+### Add external images without touching the held-out split
+
+`merge_additions.py` copies an existing train/valid/test dataset to a new
+directory and adds matched external classes to **train only**. It checks every
+candidate against all existing images and accepted additions with the same dHash
+threshold, so a new training image cannot be a near-duplicate of the existing
+validation or test set. The original dataset is never modified.
+
+```bash
+python ml_pipeline/merge_additions.py \
+  --data-dir "D:/Dataset Makanan 1GB/dataset_clean" \
+  --source-dir "D:/Dataset Makanan 1GB/external/mendeley/Indonesian Food Image/Original" \
+  --output-dir "D:/Dataset Makanan 1GB/dataset_clean_mendeley" \
+  --prefix mendeley \
+  --max-per-class 200 \
+  --threshold 4 \
+  --mode copy \
+  --source-name "Mendeley Indonesian Food Image" \
+  --source-url "https://data.mendeley.com/datasets/vtjd68bmwt" \
+  --license "CC BY 4.0"
+```
+
+Class folders are matched by normalized name (`Gado-Gado` == `gado_gado`).
+Unmatched source classes are ignored. `--include-class` limits the merge to
+specific labels, and `--max-per-class 0` disables the cap. The output contains
+`merge_report.json` and `merge_added_files.json` for auditability. Use
+`--dry-run` first to inspect counts.
+
+The merge script removes near-duplicates, but it does **not** understand image
+semantics. Public web datasets often contain product packaging, menu cards,
+storefronts, people, and collages. Build a curated source folder and review
+contact sheets before merging; otherwise those images become label noise even
+though every file is a valid image.
+
+### Add a new class
+
+`add_class.py` is the counterpart to `merge_additions.py` for a class that is
+not in the current model. It copies an existing train/valid/test dataset to a
+new directory, deduplicates the new class against every existing image and
+among the new images, and splits the accepted images into train/valid/test.
+Existing splits are verified unchanged.
+
+```bash
+python ml_pipeline/add_class.py \
+  --data-dir "D:/Dataset Makanan 1GB/dataset_clean_mendeley" \
+  --source-dir "D:/Dataset Makanan 1GB/external/mendeley/curated_bakso/Bakso" \
+  --class-name "Bakso" \
+  --output-dir "D:/Dataset Makanan 1GB/dataset_clean_mendeley_bakso" \
+  --val-split 0.1 \
+  --test-split 0.1 \
+  --threshold 4 \
+  --mode hardlink \
+  --source-name "Mendeley Indonesian Food Image" \
+  --source-url "https://data.mendeley.com/datasets/vtjd68bmwt" \
+  --license "CC BY 4.0"
+```
+
+Use `--dry-run` first. The output contains `add_class_report.json` and
+`add_class_manifest.json`. The source folder is never modified; curate it and
+review contact sheets before running the script. Update `nutrition_seed.json`
+with a matching normalized key before retraining, otherwise metadata generation
+fails loudly.
+
 ### Why not Keras' `validation_split`?
 
 `image_dataset_from_directory(validation_split=...)` slices the globally sorted
@@ -201,19 +269,16 @@ On a CPU-only laptop this run is short because the synthetic images are easy.
 
 ## Reproducing the bundled real-data model
 
-Use a pre-split dataset, remove duplicate leakage first, then train:
+The 2.2.0 dataset is built by cleaning the original 13-class Kaggle set, merging
+the curated Mendeley additions, and adding the curated Bakso class (commands above).
+Then train:
 
 ```bash
-python ml_pipeline/clean_dataset.py \
-  --input-dir "D:/Dataset Makanan 1GB/dataset_gambar" \
-  --output-dir "D:/Dataset Makanan 1GB/dataset_clean" \
-  --threshold 4
-
 python ml_pipeline/train_export.py \
-  --data-dir "D:/Dataset Makanan 1GB/dataset_clean/train" \
-  --val-dir "D:/Dataset Makanan 1GB/dataset_clean/valid" \
-  --test-dir "D:/Dataset Makanan 1GB/dataset_clean/test" \
-  --output-dir ml_pipeline/output \
+  --data-dir "D:/Dataset Makanan 1GB/dataset_clean_mendeley_bakso/train" \
+  --val-dir "D:/Dataset Makanan 1GB/dataset_clean_mendeley_bakso/valid" \
+  --test-dir "D:/Dataset Makanan 1GB/dataset_clean_mendeley_bakso/test" \
+  --output-dir ml_pipeline/output_bakso \
   --model mobilenetv3_large \
   --initial-epochs 18 \
   --fine-tune-epochs 10 \
@@ -224,15 +289,16 @@ python ml_pipeline/train_export.py \
   --quantization both \
   --primary-quantization auto \
   --tflite-eval-samples 0 \
-  --model-version 2.0.0 \
+  --model-version 2.2.0 \
   --flutter-assets-dir assets
 ```
 
 `--primary-quantization auto` compares variants on the validation split. If the
 best validation macro-F1 candidates are within 0.5 pp, it prefers the variant
 with the highest top-1 agreement with Keras, then accuracy, then the smaller
-file. For this run that selected FP16; the dynamic-range file remains available
-for size-constrained builds. The test split is not used for this choice.
+file. For this run FP16 had the best validation macro-F1 and matched Keras
+exactly; the dynamic-range file remains available for size-constrained builds.
+The test split is not used for this choice.
 
 ---
 
@@ -295,7 +361,7 @@ Validation and test data are only center-cropped, resized, and normalized.
 - Confidence temperature is fitted on validation probabilities from the exact
   TFLite file that ships in the app, then applied on-device before top-k ranking.
   It changes confidence values, not the predicted class.
-- TFLite audits use all 413 validation images by default, so a lucky 100-image
+- TFLite audits use all 457 validation images by default, so a lucky 100-image
   sample cannot decide the app model.
 
 ---
@@ -381,6 +447,14 @@ One record per class, ordered by model index:
   "modelSha256": "...",
   "referenceAmount": 100,
   "referenceUnit": "g",
+  "provenance": {
+    "sourceType": "estimation",
+    "sourceCode": "TKPI-2017;USDA-FDC-173292;USDA-FDC-170698;STANDARD-RECIPE",
+    "sourcePage": "multiple",
+    "sourceUrl": "https://repository.kemkes.go.id/book/668",
+    "verifiedAt": "2026-10-28",
+    "note": "Universal estimate; add per-item provenance before publication."
+  },
   "classes": [
     {
       "index": 0,
@@ -392,12 +466,12 @@ One record per class, ordered by model index:
       "aliases": ["ayam goreng", "fried chicken"],
       "defaultPortionGrams": 150,
       "nutritionPer100g": {
-        "caloriesKcal": 260.0,
-        "proteinG": 27.0,
-        "carbohydrateG": 6.0,
-        "fatG": 14.5,
-        "fiberG": 0.3,
-        "sodiumMg": 550.0
+        "caloriesKcal": 283.0,
+        "proteinG": 35.4,
+        "carbohydrateG": 0.9,
+        "fatG": 14.2,
+        "fiberG": 0.0,
+        "sodiumMg": 681.0
       }
     }
   ],
@@ -408,17 +482,20 @@ One record per class, ordered by model index:
 
 `nutrition_seed.json` keys are normalized (lowercase, non-alphanumerics → `_`),
 so `"Nasi Goreng"` and `nasi_goreng` match. Missing classes abort generation.
-Unused seed entries produce warnings.
+Unused seed entries produce warnings. If `provenance` is present, the generator
+requires `sourceType`, `sourceCode`, `sourcePage`, `sourceUrl`, and `verifiedAt`,
+then copies the block into the catalog. The block is universal; it does not
+replace per-item source codes or documented recipes.
 
 ### Updating nutrition data manually
 
 ```bash
 python ml_pipeline/generate_nutrition_data.py \
-  --class-names ml_pipeline/output/class_names.json \
+  --class-names ml_pipeline/output_bakso/class_names.json \
   --seed ml_pipeline/nutrition_seed.json \
-  --output ml_pipeline/output/nutrition_data.json \
-  --model-version 2.0.0 \
-  --model-path ml_pipeline/output/food_classifier.tflite
+  --output ml_pipeline/output_bakso/nutrition_data.json \
+  --model-version 2.2.0 \
+  --model-path ml_pipeline/output_bakso/food_classifier.tflite
 ```
 
 Then copy the JSON to `assets/data/` (or rerun `train_export.py`, which copies it
@@ -453,11 +530,11 @@ Run `python ml_pipeline/train_export.py --help` for the full list.
 | `--cache` | off | Cache decoded training pixels in RAM |
 | `--class-weights` | off | Inverse-frequency class weights |
 | `--quantization` | `dynamic` | `dynamic`, `fp16`, or `both` |
-| `--primary-quantization` | `auto` | `auto`, `dynamic`, or `fp16`; auto uses validation macro-F1 with a 0.5 pp Keras-agreement tie-break |
-| `--model-version` | `1.0.0` | Stored in metadata; bundled model is `2.0.0` |
+| `--primary-quantization` | `auto` | `auto`, `dynamic`, or `fp16`; auto uses validation macro-F1 with a 0.5 pp tie window, then Keras agreement |
+| `--model-version` | `1.0.0` | Stored in metadata; bundled model is `2.2.0` |
 | `--nutrition-seed` | `ml_pipeline/nutrition_seed.json` | Editable source |
 | `--flutter-assets-dir` | none | Copy model + JSON into a Flutter `assets/` folder |
-| `--tflite-eval-samples` | `0` | Validation images used for TFLite audit; `0` = all 413 |
+| `--tflite-eval-samples` | `0` | Validation images used for TFLite audit; `0` = all validation images |
 
 ---
 
@@ -499,13 +576,15 @@ Rebuild the Flutter app after copying new artifacts.
 
 ## Adding new food classes
 
-1. Add a folder with real images, e.g.
-   `D:/Dataset Makanan 1GB/dataset_clean/train/<new_class>/...` (and matching
-   `valid`/`test` folders when using a pre-split dataset).
-2. Add a matching record to `nutrition_seed.json` with the same normalized key.
-3. Retrain.
-4. Verify no nutrition warnings in the console / `model_report.json`.
-5. Rebuild the app.
+1. Curate a folder of real images and review indexed contact sheets. Drop
+   non-food, menu/packaging, cooking-process, and ambiguous shots.
+2. Run `add_class.py` against the current split dataset (see the example above).
+   It deduplicates every candidate against the existing images, splits the new
+   class into train/valid/test, and leaves the existing splits unchanged.
+3. Add a matching record to `nutrition_seed.json` with the same normalized key.
+4. Retrain.
+5. Verify no nutrition warnings in the console / `model_report.json`.
+6. Rebuild the app.
 
 Do not rename class folders without regenerating both JSON files; the app maps
 model indices to nutrition records at startup.
@@ -514,22 +593,23 @@ model indices to nutrition records at startup.
 
 ## Interpreting metrics
 
-- The bundled model scores **93.72%** on the cleaned 430-image test split
-  (macro F1 **93.22%**, top-3 **98.60%**, 95% CI 91.40–96.05%). Validation
-  accuracy/macro-F1 is **91.77% / 91.62%**. This is not a universal
+- The bundled model scores **93.04%** on the cleaned 474-image test split
+  (macro F1 **92.58%**, top-3 **98.95%**, 95% CI 90.72–95.36%). Validation
+  accuracy/macro-F1 is **92.12% / 91.93%**. This is not a universal
   food-recognition benchmark.
-- The test split has only 430 images, so a 1-image difference is about 0.23 pp.
+- The test split has only 474 images, so a 1-image difference is about 0.21 pp.
   Prefer the confidence interval and per-class report over tiny ranking changes.
-- The supplied dataset had **1,487 duplicate/leakage images** removed (6,500 →
-  5,013) before training. Without that cleanup, test accuracy would have been
-  inflated.
-- Full-test TFLite audit: FP16 **93.72%**, dynamic-range **92.56%**. The pipeline
+- The original 13-class Kaggle dataset had **1,487 duplicate/leakage images** removed (6,500 →
+  5,013) before training. The curated Mendeley additions add 965 images
+  (5,978 total), and the 14-class Bakso set adds 441 more (6,419 total).
+- Full-test TFLite audit: FP16 **93.04%**, dynamic-range **92.83%**. The pipeline
   selected FP16 as the app model. Temperature scaling (T = 0.70) reduced test
-  expected calibration error from 6.16% to 2.24%. See `model_report.json` for the
+  expected calibration error from 5.94% to 2.24%. See `model_report.json` for the
   conversion audit and per-mode latency.
 - Check the confusion matrix and per-class precision/recall, not only overall
-  accuracy. In this run the weakest classes were Nasi Padang (F1 0.84), Rendang
-  (F1 0.85), and Ayam Goreng (F1 0.86).
+  accuracy. In this run the weakest classes were Ayam Goreng (F1 0.83), Nasi
+  Padang (F1 0.83), and Rendang (F1 0.87). Bakso reached F1 0.95 on 44 test
+  images.
 - TFLite accuracy is measured against Keras on the same samples; the top-1
   agreement column catches conversion regressions.
 - Desktop latency is not phone latency. Benchmark on low-, mid-, and high-end
@@ -572,7 +652,7 @@ can also appear when changing the backbone; check the converter error and keep
 - [x] Hold out a test set that was never used for training or model selection.
 - [x] Remove duplicate leakage and audit the TFLite conversion.
 - [ ] Confirm the dataset license permits the intended distribution/use.
-- [ ] Replace nutrition estimates with values from a verified database.
+- [ ] Add per-item nutrition provenance (source code/page or recipe/yield) before publication; the current catalog uses a universal estimation block.
 - [ ] Benchmark TFLite on real low/mid/high-end phones.
 - [ ] Add release signing, versioning, and model hash verification to CI.
 - [ ] Keep `class_names.json`, `nutrition_data.json`, and the TFLite model in sync.

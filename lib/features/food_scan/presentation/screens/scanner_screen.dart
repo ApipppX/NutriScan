@@ -6,7 +6,10 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/widgets/brand_mark.dart';
 import '../../../../core/widgets/offline_badge.dart';
+import '../../../about/presentation/screens/about_screen.dart';
+import '../../../daily_diary/domain/entities/diary_entry.dart';
 import '../../../daily_diary/presentation/providers/diary_providers.dart';
+import '../../../daily_diary/presentation/screens/diary_history_screen.dart';
 import '../../../daily_diary/presentation/widgets/meal_type_sheet.dart';
 import '../../domain/entities/scan_source.dart';
 import '../controllers/scan_controller.dart';
@@ -106,12 +109,33 @@ final class _ScannerScreenState extends ConsumerState<ScannerScreen> {
     }
   }
 
+  Future<void> _openDiary() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (BuildContext context) => const DiaryHistoryScreen(),
+      ),
+    );
+  }
+
+  Future<void> _openAbout() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (BuildContext context) => const AboutScreen(),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.listen<ScanState>(scanControllerProvider, _focusResult);
     final state = ref.watch(scanControllerProvider);
     final controller = ref.read(scanControllerProvider.notifier);
     final scheme = Theme.of(context).colorScheme;
+    final diaryEntries =
+        ref.watch(diaryControllerProvider).value ?? const <DiaryEntry>[];
+    final todayEntryCount = diaryEntries
+        .where((DiaryEntry entry) => entry.isSameDay(DateTime.now()))
+        .length;
 
     return Scaffold(
       bottomNavigationBar: state is ScanSuccessState
@@ -166,10 +190,14 @@ final class _ScannerScreenState extends ConsumerState<ScannerScreen> {
                   controller: _scrollController,
                   physics: const ClampingScrollPhysics(),
                   slivers: <Widget>[
-                    const SliverToBoxAdapter(
+                    SliverToBoxAdapter(
                       child: Padding(
-                        padding: EdgeInsets.fromLTRB(20, 12, 20, 0),
-                        child: _ScannerHeader(),
+                        padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                        child: _ScannerHeader(
+                          todayEntryCount: todayEntryCount,
+                          onOpenDiary: _openDiary,
+                          onOpenAbout: _openAbout,
+                        ),
                       ),
                     ),
                     SliverPadding(
@@ -358,7 +386,15 @@ final class _DiaryActionBar extends StatelessWidget {
 }
 
 final class _ScannerHeader extends StatelessWidget {
-  const _ScannerHeader();
+  const _ScannerHeader({
+    required this.todayEntryCount,
+    required this.onOpenDiary,
+    required this.onOpenAbout,
+  });
+
+  final int todayEntryCount;
+  final VoidCallback onOpenDiary;
+  final VoidCallback onOpenAbout;
 
   @override
   Widget build(BuildContext context) {
@@ -393,10 +429,23 @@ final class _ScannerHeader extends StatelessWidget {
                 ],
               ),
             ),
-            const OfflineBadge(compact: true),
+            IconButton(
+              tooltip: 'Riwayat diary',
+              onPressed: onOpenDiary,
+              icon: Badge.count(
+                count: todayEntryCount,
+                isLabelVisible: todayEntryCount > 0,
+                child: const Icon(Icons.menu_book_rounded),
+              ),
+            ),
+            IconButton(
+              tooltip: 'Tentang NutriScan',
+              onPressed: onOpenAbout,
+              icon: const Icon(Icons.info_outline_rounded),
+            ),
           ],
         ),
-        const SizedBox(height: 28),
+        const SizedBox(height: 24),
         Row(
           children: <Widget>[
             Container(
@@ -408,14 +457,20 @@ final class _ScannerHeader extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 7),
-            Text(
-              'AI GIZI DI PERANGKAT',
-              style: textTheme.labelSmall?.copyWith(
-                color: scheme.primary,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 1.2,
+            Expanded(
+              child: Text(
+                'AI GIZI DI PERANGKAT',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: textTheme.labelSmall?.copyWith(
+                  color: scheme.primary,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.2,
+                ),
               ),
             ),
+            const SizedBox(width: 8),
+            const OfflineBadge(compact: true),
           ],
         ),
         const SizedBox(height: 10),
