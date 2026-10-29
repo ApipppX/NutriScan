@@ -56,3 +56,6 @@ __pycache__/
 ml_pipeline/dataset/
 ml_pipeline/output/
 ml_pipeline/output_*/
+
+# Private research notes and manuscript drafts
+/docs/*.md
