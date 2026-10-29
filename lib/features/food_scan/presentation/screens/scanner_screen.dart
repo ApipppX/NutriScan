@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/localization/food_label_localizer.dart';
 import '../../../../core/logging/app_logger.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/formatters.dart';
@@ -121,6 +122,10 @@ final class _ScannerScreenState extends ConsumerState<ScannerScreen> {
     if (!state.result.needsReview) return true;
 
     final candidate = state.result.selected;
+    final displayName = FoodLabelLocalizer.resolve(
+      candidate.label,
+      displayName: candidate.displayName,
+    );
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (BuildContext context) {
@@ -141,12 +146,12 @@ final class _ScannerScreenState extends ConsumerState<ScannerScreen> {
           content: Text(
             critical
                 ? 'Model hanya yakin ${formatPercent(candidate.confidence)} '
-                      'terhadap "${candidate.displayName}". Foto ini mungkin '
+                      'terhadap "$displayName". Foto ini mungkin '
                       'bukan salah satu makanan yang didukung, sehingga nilai '
                       'gizinya berisiko tidak akurat.'
                 : 'Keyakinan model ${formatPercent(candidate.confidence)} '
                       'dengan selisih prediksi teratas yang sempit. Pastikan '
-                      '"${candidate.displayName}" memang makanan pada foto '
+                      '"$displayName" memang makanan pada foto '
                       'sebelum menyimpannya.',
           ),
           actions: <Widget>[
