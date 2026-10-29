@@ -22,6 +22,10 @@ final Uint8List _tinyPng = base64Decode(
 );
 
 final class _FakeClassifier implements FoodClassifier {
+  _FakeClassifier({this.confidence = 0.87});
+
+  final double confidence;
+
   @override
   Future<void> initialize() async {}
 
@@ -30,8 +34,12 @@ final class _FakeClassifier implements FoodClassifier {
     Uint8List imageBytes, {
     int topK = 3,
   }) async {
-    return const <FoodRecognition>[
-      FoodRecognition(classIndex: 4, label: 'fried_noodles', confidence: 0.87),
+    return <FoodRecognition>[
+      FoodRecognition(
+        classIndex: 4,
+        label: 'fried_noodles',
+        confidence: confidence,
+      ),
     ];
   }
 
@@ -71,29 +79,41 @@ final class _FakeNutritionRepository implements NutritionRepository {
       label == _food.label ? _food : null;
 }
 
+Future<ProviderContainer> _pumpScanner(
+  WidgetTester tester, {
+  double confidence = 0.87,
+}) async {
+  await tester.binding.setSurfaceSize(const Size(390, 844));
+  addTearDown(() => tester.binding.setSurfaceSize(null));
+
+  final container = ProviderContainer(
+    overrides: [
+      scanFoodUseCaseProvider.overrideWithValue(
+        ScanFoodUseCase(
+          _FakeClassifier(confidence: confidence),
+          _FakeNutritionRepository(),
+        ),
+      ),
+      nutritionRepositoryProvider.overrideWithValue(_FakeNutritionRepository()),
+    ],
+  );
+  addTearDown(container.dispose);
+
+  await tester.pumpWidget(
+    UncontrolledProviderScope(
+      container: container,
+      child: MaterialApp(theme: AppTheme.light, home: const ScannerScreen()),
+    ),
+  );
+  await tester.pumpAndSettle();
+  return container;
+}
+
 void main() {
   testWidgets('result content keeps space above the diary action bar', (
     tester,
   ) async {
-    await tester.binding.setSurfaceSize(const Size(390, 844));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
-
-    final container = ProviderContainer(
-      overrides: [
-        scanFoodUseCaseProvider.overrideWithValue(
-          ScanFoodUseCase(_FakeClassifier(), _FakeNutritionRepository()),
-        ),
-      ],
-    );
-    addTearDown(container.dispose);
-
-    await tester.pumpWidget(
-      UncontrolledProviderScope(
-        container: container,
-        child: MaterialApp(theme: AppTheme.light, home: const ScannerScreen()),
-      ),
-    );
-    await tester.pumpAndSettle();
+    final container = await _pumpScanner(tester);
 
     await container
         .read(scanControllerProvider.notifier)
@@ -110,5 +130,52 @@ void main() {
     // the full scaffold height (which previously left the body with 0 px).
     expect(barText.top, greaterThan(700));
     expect(barText.bottom, lessThanOrEqualTo(844));
+  });
+
+  testWidgets('uncertain result requires confirmation before saving', (
+    tester,
+  ) async {
+    final container = await _pumpScanner(tester, confidence: 0.35);
+
+    await container
+        .read(scanControllerProvider.notifier)
+        .classifyBytes(_tinyPng);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Simpan'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Tetap simpan'), findsOneWidget);
+    expect(find.textContaining('berisiko tidak akurat'), findsOneWidget);
+
+    await tester.tap(find.text('Batal'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Tetap simpan'), findsNothing);
+    expect(
+      find.text('Pilih waktu makan agar asupan harianmu tercatat rapi.'),
+      findsNothing,
+    );
+  });
+
+  testWidgets('confirmed uncertain result continues to the meal picker', (
+    tester,
+  ) async {
+    final container = await _pumpScanner(tester, confidence: 0.35);
+
+    await container
+        .read(scanControllerProvider.notifier)
+        .classifyBytes(_tinyPng);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Simpan'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Tetap simpan'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Pilih waktu makan agar asupan harianmu tercatat rapi.'),
+      findsOneWidget,
+    );
   });
 }

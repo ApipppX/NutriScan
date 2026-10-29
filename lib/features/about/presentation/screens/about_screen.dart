@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/constants/app_config.dart';
+import '../../../../core/utils/formatters.dart';
 import '../../../../core/widgets/brand_mark.dart';
 import '../../../../core/widgets/offline_badge.dart';
 import '../../../food_scan/domain/entities/nutrition_provenance.dart';
@@ -75,6 +77,40 @@ final class _AboutContent extends StatelessWidget {
                     ),
                   if (info.generatedAt != null)
                     _InfoRow(label: 'Katalog dibuat', value: info.generatedAt!),
+                ],
+              ),
+              const SizedBox(height: 14),
+              _AboutSection(
+                icon: Icons.rule_rounded,
+                title: 'Batasan model',
+                children: <Widget>[
+                  Text(
+                    'Model ini bersifat tertutup (closed-set): model hanya '
+                    'mengenali ${info.classCount} makanan yang tercantum di '
+                    'aplikasi dan tidak memiliki kelas "tidak dikenal". Foto '
+                    'makanan lain tetap akan dipetakan ke salah satu kelas.',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                      height: 1.55,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _Bullet(
+                    'Peringatan memakai heuristik: keyakinan di bawah '
+                    '${formatPercent(AppConfig.confidenceWarningThreshold, decimals: 0)} '
+                    'atau selisih dua prediksi teratas di bawah '
+                    '${formatPercent(AppConfig.confidenceMarginThreshold, decimals: 0)}. '
+                    'Ini bukan deteksi makanan asing yang tervalidasi.',
+                  ),
+                  const _Bullet(
+                    'Selalu periksa "Daftar makanan" pada hasil scan. Jika '
+                    'makananmu tidak ada di sana, foto ulang atau pilih '
+                    'alternatif yang paling sesuai.',
+                  ),
+                  const _Bullet(
+                    'Hasil dengan keyakinan sangat rendah memerlukan '
+                    'konfirmasi sebelum disimpan ke diary.',
+                  ),
                 ],
               ),
               const SizedBox(height: 14),

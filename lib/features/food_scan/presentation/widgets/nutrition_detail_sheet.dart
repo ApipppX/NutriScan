@@ -4,13 +4,13 @@ import '../../../../core/localization/food_label_localizer.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../domain/entities/food_candidate.dart';
-import '../../domain/entities/nutrition_facts.dart';
 import 'macro_energy_bar.dart';
+import 'nutrition_summary_table.dart';
 
 /// Opens the read-only nutrition breakdown for the current portion.
 ///
 /// Portion adjustments happen on the result card; this sheet is the detailed
-/// reference view (macros, fiber, sodium, and per-100 g values).
+/// reference view with the same per-portion/per-100 table used in the card.
 Future<void> showNutritionDetailSheet(
   BuildContext context,
   FoodCandidate candidate, {
@@ -172,86 +172,30 @@ final class _NutritionDetailSheet extends StatelessWidget {
                 const SizedBox(height: 20),
                 Row(
                   children: <Widget>[
-                    Text('Makronutrien', style: textTheme.titleMedium),
-                    const Spacer(),
-                    Text(
-                      formatPortionInUnit(portionGrams, unit),
-                      style: textTheme.labelSmall?.copyWith(
-                        color: scheme.onSurfaceVariant,
+                    Text('Distribusi energi', style: textTheme.titleMedium),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Protein · Karbo · Lemak',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.end,
+                        style: textTheme.labelSmall?.copyWith(
+                          color: scheme.onSurfaceVariant,
+                        ),
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 10),
                 MacroEnergyBar(facts: facts),
-                const SizedBox(height: 14),
-                _MacroDetailRow(
-                  label: 'Protein',
-                  grams: facts.proteinG,
-                  share: facts.energyShare(MacroNutrient.protein),
-                  color: macros.protein,
-                  containerColor: macros.proteinContainer,
-                  icon: Icons.fitness_center_rounded,
-                ),
-                const SizedBox(height: 8),
-                _MacroDetailRow(
-                  label: 'Karbohidrat',
-                  grams: facts.carbohydrateG,
-                  share: facts.energyShare(MacroNutrient.carbohydrates),
-                  color: macros.carbohydrates,
-                  containerColor: macros.carbohydratesContainer,
-                  icon: Icons.rice_bowl_rounded,
-                ),
-                const SizedBox(height: 8),
-                _MacroDetailRow(
-                  label: 'Lemak',
-                  grams: facts.fatG,
-                  share: facts.energyShare(MacroNutrient.fat),
-                  color: macros.fat,
-                  containerColor: macros.fatContainer,
-                  icon: Icons.water_drop_rounded,
-                ),
-                const SizedBox(height: 18),
-                Row(
-                  children: <Widget>[
-                    Expanded(
-                      child: _ExtraFactTile(
-                        icon: Icons.grass_rounded,
-                        label: 'Serat',
-                        value: formatGrams(facts.fiberG),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: _ExtraFactTile(
-                        icon: Icons.grain_rounded,
-                        label: 'Natrium',
-                        value: '${facts.sodiumMg.round()} mg',
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: scheme.surfaceContainerHighest.withValues(
-                      alpha: 0.6,
-                    ),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Text(
-                    'Per 100 $unit: ${formatKcal(food.per100g.caloriesKcal)} · '
-                    'P ${formatGrams(food.per100g.proteinG)} · '
-                    'K ${formatGrams(food.per100g.carbohydrateG)} · '
-                    'L ${formatGrams(food.per100g.fatG)} · '
-                    'Serat ${formatGrams(food.per100g.fiberG)} · '
-                    'Na ${food.per100g.sodiumMg.round()} mg',
-                    style: textTheme.bodySmall?.copyWith(
-                      color: scheme.onSurfaceVariant,
-                      height: 1.45,
-                    ),
-                  ),
+                const SizedBox(height: 20),
+                Text('Rincian zat gizi', style: textTheme.titleMedium),
+                const SizedBox(height: 10),
+                NutritionSummaryTable(
+                  portionFacts: facts,
+                  per100g: food.per100g,
+                  unit: unit,
                 ),
                 const SizedBox(height: 12),
                 Row(
@@ -265,8 +209,9 @@ final class _NutritionDetailSheet extends StatelessWidget {
                     const SizedBox(width: 7),
                     Expanded(
                       child: Text(
-                        'Nilai gizi adalah estimasi dan dapat berbeda tergantung resep, '
-                        'bahan, serta ukuran porsi. Bukan pengganti saran medis.',
+                        'Nilai gizi adalah estimasi dan dapat berbeda tergantung '
+                        'resep, bahan, serta ukuran porsi. Bukan pengganti '
+                        'saran medis.',
                         style: textTheme.bodySmall?.copyWith(
                           color: scheme.onSurfaceVariant,
                           height: 1.45,
@@ -284,147 +229,6 @@ final class _NutritionDetailSheet extends StatelessWidget {
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-final class _MacroDetailRow extends StatelessWidget {
-  const _MacroDetailRow({
-    required this.label,
-    required this.grams,
-    required this.share,
-    required this.color,
-    required this.containerColor,
-    required this.icon,
-  });
-
-  final String label;
-  final double grams;
-  final double share;
-  final Color color;
-  final Color containerColor;
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-      decoration: BoxDecoration(
-        color: containerColor.withValues(alpha: 0.55),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        children: <Widget>[
-          Container(
-            width: 34,
-            height: 34,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: color.withValues(alpha: 0.12),
-            ),
-            child: Icon(icon, size: 17, color: color),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Row(
-                  children: <Widget>[
-                    Expanded(
-                      child: Text(
-                        label,
-                        style: textTheme.labelLarge?.copyWith(color: color),
-                      ),
-                    ),
-                    Text(
-                      formatGrams(grams),
-                      style: textTheme.labelLarge?.copyWith(
-                        color: color,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(999),
-                  child: LinearProgressIndicator(
-                    value: share.clamp(0.0, 1.0),
-                    minHeight: 5,
-                    color: color,
-                    backgroundColor: color.withValues(alpha: 0.15),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 10),
-          SizedBox(
-            width: 42,
-            child: Text(
-              formatPercent(share, decimals: 0),
-              textAlign: TextAlign.end,
-              style: textTheme.labelSmall?.copyWith(
-                color: color.withValues(alpha: 0.8),
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-final class _ExtraFactTile extends StatelessWidget {
-  const _ExtraFactTile({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
-
-  final IconData icon;
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.5)),
-      ),
-      child: Row(
-        children: <Widget>[
-          Icon(icon, size: 18, color: scheme.onSurfaceVariant),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  label,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: scheme.onSurfaceVariant,
-                  ),
-                ),
-                Text(
-                  value,
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }

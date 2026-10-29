@@ -8,6 +8,16 @@ String formatKcal(double value) => '${value.round()} kkal';
 
 String formatGrams(double value) => '${_trimDecimal(value, 1)} g';
 
+/// Formats milligrams with Indonesian thousands separators, e.g. `1.050 mg`.
+String formatMilligrams(double value) {
+  final digits = value.round().toString();
+  final formatted = digits.replaceAllMapped(
+    RegExp(r'\B(?=(\d{3})+(?!\d))'),
+    (Match match) => '.',
+  );
+  return '$formatted mg';
+}
+
 String formatPercent(double fraction, {int decimals = 1}) {
   final clamped = fraction.clamp(0.0, 1.0);
   return '${(clamped * 100).toStringAsFixed(decimals).replaceAll('.', ',')}%';

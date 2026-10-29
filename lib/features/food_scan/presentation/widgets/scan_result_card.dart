@@ -4,12 +4,15 @@ import '../../../../core/localization/food_label_localizer.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../domain/entities/food_candidate.dart';
+import '../../domain/entities/food_nutrition.dart';
 import '../../domain/entities/nutrition_facts.dart';
 import '../../domain/entities/scan_result.dart';
 import 'ai_confidence_panel.dart';
 import 'macro_donut_chart.dart';
 import 'nutrition_detail_sheet.dart';
+import 'nutrition_summary_table.dart';
 import 'portion_selector.dart';
+import 'supported_foods_sheet.dart';
 
 /// Comprehensive, per-serving result view for a completed scan.
 ///
@@ -21,6 +24,7 @@ final class ScanResultCard extends StatelessWidget {
     super.key,
     required this.result,
     required this.portionGrams,
+    required this.supportedFoods,
     required this.onSelectCandidate,
     required this.onPortionChanged,
     required this.onRetake,
@@ -29,6 +33,9 @@ final class ScanResultCard extends StatelessWidget {
 
   final ScanResult result;
   final int portionGrams;
+
+  /// Every food the closed-set model can recognize.
+  final List<FoodNutrition> supportedFoods;
   final ValueChanged<String> onSelectCandidate;
   final ValueChanged<int> onPortionChanged;
   final VoidCallback onRetake;
@@ -117,7 +124,14 @@ final class ScanResultCard extends StatelessWidget {
             const SizedBox(height: 18),
             AiConfidencePanel(
               confidence: selected.confidence,
+              margin: result.hasAlternatives ? result.confidenceMargin : null,
+              isManualSelection: result.isManualSelection,
               onRetake: onRetake,
+              onShowSupportedFoods: () => showSupportedFoodsSheet(
+                context,
+                foods: supportedFoods,
+                selectedLabel: selected.label,
+              ),
             ),
             const SizedBox(height: 18),
             PortionSelector(
@@ -195,19 +209,19 @@ final class ScanResultCard extends StatelessWidget {
               },
             ),
             const SizedBox(height: 18),
-            _NutritionGrid(
-              facts: facts,
-              portionGrams: portionGrams,
+            NutritionSummaryTable(
+              portionFacts: facts,
+              per100g: food.per100g,
               unit: unit,
             ),
-            if (result.hasAlternatives) ...<Widget>[
-              const SizedBox(height: 20),
-              Text(
-                'Bukan ini?',
-                style: textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
+            const SizedBox(height: 20),
+            Text(
+              'Bukan ini?',
+              style: textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w700,
               ),
+            ),
+            if (result.hasAlternatives) ...<Widget>[
               const SizedBox(height: 10),
               Wrap(
                 spacing: 8,
@@ -223,6 +237,21 @@ final class ScanResultCard extends StatelessWidget {
                 ],
               ),
             ],
+            if (supportedFoods.isNotEmpty)
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: () => showSupportedFoodsSheet(
+                    context,
+                    foods: supportedFoods,
+                    selectedLabel: selected.label,
+                  ),
+                  icon: const Icon(Icons.list_alt_rounded, size: 18),
+                  label: Text(
+                    'Lihat ${supportedFoods.length} makanan yang didukung',
+                  ),
+                ),
+              ),
             const SizedBox(height: 20),
             LayoutBuilder(
               builder: (BuildContext context, BoxConstraints constraints) {
@@ -292,170 +321,6 @@ final class _MetaChip extends StatelessWidget {
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
               color: scheme.onSurfaceVariant,
               fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-final class _NutritionGrid extends StatelessWidget {
-  const _NutritionGrid({
-    required this.facts,
-    required this.portionGrams,
-    required this.unit,
-  });
-
-  final NutritionFacts facts;
-  final int portionGrams;
-  final String unit;
-
-  @override
-  Widget build(BuildContext context) {
-    final macros = Theme.of(context).extension<MacroColors>()!;
-    final scheme = Theme.of(context).colorScheme;
-
-    return Column(
-      children: <Widget>[
-        Row(
-          children: <Widget>[
-            Expanded(
-              child: _NutritionFactTile(
-                icon: Icons.local_fire_department_rounded,
-                label: 'Kalori',
-                value: formatKcal(facts.caloriesKcal),
-                color: macros.calories,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _NutritionFactTile(
-                icon: Icons.fitness_center_rounded,
-                label: 'Protein',
-                value: formatGrams(facts.proteinG),
-                color: macros.protein,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: <Widget>[
-            Expanded(
-              child: _NutritionFactTile(
-                icon: Icons.rice_bowl_rounded,
-                label: 'Karbohidrat',
-                value: formatGrams(facts.carbohydrateG),
-                color: macros.carbohydrates,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _NutritionFactTile(
-                icon: Icons.water_drop_rounded,
-                label: 'Lemak',
-                value: formatGrams(facts.fatG),
-                color: macros.fat,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: <Widget>[
-            Expanded(
-              child: _NutritionFactTile(
-                icon: Icons.grass_rounded,
-                label: 'Serat',
-                value: formatGrams(facts.fiberG),
-                color: scheme.tertiary,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _NutritionFactTile(
-                icon: Icons.grain_rounded,
-                label: 'Natrium',
-                value: '${facts.sodiumMg.round()} mg',
-                color: scheme.secondary,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        Text(
-          'Nilai gizi dihitung otomatis untuk porsi '
-          '${formatPortionInUnit(portionGrams, unit)}. '
-          'Estimasi dapat berbeda tergantung resep.',
-          textAlign: TextAlign.left,
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-            height: 1.4,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-final class _NutritionFactTile extends StatelessWidget {
-  const _NutritionFactTile({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.color,
-  });
-
-  final IconData icon;
-  final String label;
-  final String value;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.5)),
-      ),
-      child: Row(
-        children: <Widget>[
-          Container(
-            width: 30,
-            height: 30,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, size: 16, color: color),
-          ),
-          const SizedBox(width: 9),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: scheme.onSurfaceVariant,
-                  ),
-                ),
-                Text(
-                  value,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ],
             ),
           ),
         ],

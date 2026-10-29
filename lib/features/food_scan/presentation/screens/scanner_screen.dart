@@ -13,6 +13,7 @@ import '../../../daily_diary/presentation/screens/diary_history_screen.dart';
 import '../../../daily_diary/presentation/widgets/meal_type_sheet.dart';
 import '../../domain/entities/scan_source.dart';
 import '../controllers/scan_controller.dart';
+import '../providers/scan_providers.dart';
 import '../state/scan_state.dart';
 import '../widgets/scan_failure_card.dart';
 import '../widgets/scan_result_card.dart';
@@ -68,6 +69,10 @@ final class _ScannerScreenState extends ConsumerState<ScannerScreen> {
 
   Future<void> _saveMeal(ScanSuccessState state) async {
     final candidate = state.result.selected;
+
+    if (!await _confirmUncertainResult(state)) return;
+    if (!mounted) return;
+
     final mealType = await showMealTypeSheet(
       context,
       candidate: candidate,
@@ -107,6 +112,57 @@ final class _ScannerScreenState extends ConsumerState<ScannerScreen> {
           ),
         );
     }
+  }
+
+  /// Requires explicit confirmation before a heuristically uncertain result is
+  /// written to the diary. The classifier has no "unknown" class, so this is
+  /// the point where the user acknowledges the limitation.
+  Future<bool> _confirmUncertainResult(ScanSuccessState state) async {
+    if (!state.result.needsReview) return true;
+
+    final candidate = state.result.selected;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        final scheme = Theme.of(context).colorScheme;
+        final critical = state.result.isCriticallyUncertain;
+        return AlertDialog(
+          icon: Icon(
+            critical
+                ? Icons.report_problem_rounded
+                : Icons.help_outline_rounded,
+            color: critical ? scheme.error : scheme.tertiary,
+          ),
+          title: Text(
+            critical
+                ? 'Makanan mungkin tidak dikenali'
+                : 'Hasil perlu diperiksa',
+          ),
+          content: Text(
+            critical
+                ? 'Model hanya yakin ${formatPercent(candidate.confidence)} '
+                      'terhadap "${candidate.displayName}". Foto ini mungkin '
+                      'bukan salah satu makanan yang didukung, sehingga nilai '
+                      'gizinya berisiko tidak akurat.'
+                : 'Keyakinan model ${formatPercent(candidate.confidence)} '
+                      'dengan selisih prediksi teratas yang sempit. Pastikan '
+                      '"${candidate.displayName}" memang makanan pada foto '
+                      'sebelum menyimpannya.',
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Batal'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Tetap simpan'),
+            ),
+          ],
+        );
+      },
+    );
+    return confirmed ?? false;
   }
 
   Future<void> _openDiary() async {
@@ -265,6 +321,7 @@ final class _ScannerScreenState extends ConsumerState<ScannerScreen> {
         key: ValueKey<String>('result-${state.result.selected.label}'),
         result: state.result,
         portionGrams: state.effectivePortionGrams,
+        supportedFoods: ref.watch(nutritionRepositoryProvider).entries,
         onSelectCandidate: controller.selectCandidate,
         onPortionChanged: controller.setPortion,
         onRetake: () => controller.pickAndScan(ScanSource.camera),

@@ -51,6 +51,7 @@ void main() {
 
     expect(find.text('Tentang NutriScan'), findsOneWidget);
     expect(find.text('Model klasifikasi'), findsOneWidget);
+    expect(find.text('Batasan model'), findsOneWidget);
     expect(find.text('Sumber nilai gizi'), findsOneWidget);
     expect(find.text('Privasi & penyimpanan'), findsOneWidget);
     expect(find.text('Disclaimer'), findsOneWidget);
@@ -61,5 +62,10 @@ void main() {
     expect(find.textContaining('2026-10-28'), findsOneWidget);
     expect(find.textContaining('bukan alat medis'), findsOneWidget);
     expect(find.textContaining('SQLite'), findsOneWidget);
+    expect(
+      find.textContaining('tidak memiliki kelas "tidak dikenal"'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('heuristik'), findsOneWidget);
   });
 }

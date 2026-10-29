@@ -29,4 +29,12 @@ void main() {
       expect(formatClockTime(DateTime(2026, 10, 29, 19, 30)), '19.30');
     });
   });
+
+  group('nutrition formatting', () {
+    test('formats milligrams with Indonesian thousands separators', () {
+      expect(formatMilligrams(420), '420 mg');
+      expect(formatMilligrams(1050), '1.050 mg');
+      expect(formatMilligrams(1250000), '1.250.000 mg');
+    });
+  });
 }

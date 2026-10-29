@@ -52,6 +52,9 @@ Widget _host({
         child: ScanResultCard(
           result: result,
           portionGrams: portionGrams,
+          supportedFoods: result.candidates
+              .map((FoodCandidate candidate) => candidate.food)
+              .toList(growable: false),
           onSelectCandidate: onSelectCandidate,
           onPortionChanged: onPortionChanged,
           onRetake: onRetake,
@@ -106,14 +109,19 @@ void main() {
     expect(find.text('Olahan Mie'), findsOneWidget);
     expect(find.text('87,4%'), findsOneWidget);
     expect(find.text('Keyakinan AI'), findsOneWidget);
+    expect(find.text('Energi'), findsOneWidget);
     expect(find.text('Protein'), findsWidgets);
     expect(find.text('Karbohidrat'), findsWidgets);
     expect(find.text('Lemak'), findsWidgets);
-    expect(find.text('Kalori'), findsOneWidget);
     expect(find.text('Serat'), findsOneWidget);
     expect(find.text('Natrium'), findsOneWidget);
+    expect(find.text('PER PORSI'), findsOneWidget);
+    expect(find.text('PER 100 G'), findsOneWidget);
     expect(find.text('420 kkal'), findsOneWidget);
-    expect(find.text('420'), findsOneWidget);
+    expect(find.text('168 kkal'), findsOneWidget);
+    expect(find.text('1.050 mg'), findsOneWidget);
+    expect(find.text('420 mg'), findsOneWidget);
+    expect(find.text('Lihat 2 makanan yang didukung'), findsOneWidget);
 
     final detailsButton = find.text('Rincian lengkap');
     await tester.ensureVisible(detailsButton);
@@ -121,8 +129,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Total energi'), findsOneWidget);
-    expect(find.text('Makronutrien'), findsOneWidget);
-    expect(find.textContaining('Per 100 g:'), findsOneWidget);
+    expect(find.text('Distribusi energi'), findsOneWidget);
+    expect(find.text('Rincian zat gizi'), findsOneWidget);
+    expect(find.text('PER 100 G'), findsWidgets);
     expect(find.text('Natrium'), findsWidgets);
 
     final closeButton = find.text('Tutup');
@@ -178,7 +187,9 @@ void main() {
     expect(find.text('437'), findsOneWidget);
   });
 
-  testWidgets('low confidence reveals the retake action', (tester) async {
+  testWidgets('low confidence reveals the review and supported-food actions', (
+    tester,
+  ) async {
     await tester.binding.setSurfaceSize(const Size(390, 844));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -192,6 +203,14 @@ void main() {
           emoji: '🍜',
           confidence: 0.42,
           portion: 250,
+        ),
+        _candidate(
+          index: 3,
+          label: 'nasi_goreng',
+          displayName: 'Nasi Goreng',
+          emoji: '🍚',
+          confidence: 0.30,
+          portion: 220,
         ),
       ],
     );
@@ -209,13 +228,117 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Rendah'), findsOneWidget);
+    expect(find.text('Hasil perlu diperiksa'), findsOneWidget);
+
+    final supportedFoodsButton = find.text('Daftar makanan');
+    expect(supportedFoodsButton, findsOneWidget);
+    await tester.ensureVisible(supportedFoodsButton);
+    await tester.tap(supportedFoodsButton);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Makanan yang didukung'), findsOneWidget);
+    expect(find.text('2 kelas dalam model ini'), findsOneWidget);
+    expect(
+      find.textContaining('memiliki kelas "tidak dikenal"'),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.byTooltip('Tutup'));
+    await tester.pumpAndSettle();
+
     final retakeButton = find.text('Foto Ulang');
     expect(retakeButton, findsOneWidget);
-
     await tester.ensureVisible(retakeButton);
     await tester.tap(retakeButton);
     await tester.pump();
 
     expect(retook, isTrue);
+  });
+
+  testWidgets(
+    'critically uncertain result warns that food may be unsupported',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(390, 844));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      final result = ScanResult(
+        candidates: <FoodCandidate>[
+          _candidate(
+            index: 4,
+            label: 'mie_goreng',
+            displayName: 'Mie Goreng',
+            emoji: '🍜',
+            confidence: 0.35,
+            portion: 250,
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        _host(
+          result: result,
+          portionGrams: 250,
+          onPortionChanged: (_) {},
+          onRetake: () {},
+          onSelectCandidate: (_) {},
+          onScanAgain: () {},
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Sangat rendah'), findsOneWidget);
+      expect(find.text('Makanan mungkin tidak dikenali'), findsOneWidget);
+      expect(
+        find.textContaining('bukan salah satu makanan yang didukung'),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets('narrow top-two margin is flagged even above the low threshold', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    final result = ScanResult(
+      candidates: <FoodCandidate>[
+        _candidate(
+          index: 4,
+          label: 'mie_goreng',
+          displayName: 'Mie Goreng',
+          emoji: '🍜',
+          confidence: 0.72,
+          portion: 250,
+        ),
+        _candidate(
+          index: 3,
+          label: 'nasi_goreng',
+          displayName: 'Nasi Goreng',
+          emoji: '🍚',
+          confidence: 0.68,
+          portion: 220,
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      _host(
+        result: result,
+        portionGrams: 250,
+        onPortionChanged: (_) {},
+        onRetake: () {},
+        onSelectCandidate: (_) {},
+        onScanAgain: () {},
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Ambigu'), findsOneWidget);
+    expect(find.text('Hasil perlu diperiksa'), findsOneWidget);
+    expect(
+      find.textContaining('Dua prediksi teratas hampir sama kuat'),
+      findsOneWidget,
+    );
   });
 }

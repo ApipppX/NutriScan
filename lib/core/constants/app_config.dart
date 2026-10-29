@@ -9,6 +9,12 @@ abstract final class AppConfig {
   /// Below this value the UI displays a low-confidence warning.
   static const double confidenceWarningThreshold = 0.60;
 
+  /// Below this value the result is treated as critically uncertain.
+  static const double confidenceCriticalThreshold = 0.40;
+
+  /// Minimum top-1/top-2 gap before a prediction is considered ambiguous.
+  static const double confidenceMarginThreshold = 0.10;
+
   /// Guards against a stalled native inference call.
   static const Duration inferenceTimeout = Duration(seconds: 25);
 

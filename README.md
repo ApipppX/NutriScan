@@ -24,11 +24,11 @@ No image ever leaves the device. The Android manifest intentionally declares no 
 | Nutrition | Per-100 g values in `nutrition_data.json`, indexed to model outputs |
 | Inference | Long-lived background isolate; no per-scan interpreter reload |
 | UI | Material 3, Indonesian copy, light/dark theme, idle/loading/success/error states |
-| Result experience | Animated macro donut, confidence percentage bar, retake action, portion stepper with quick presets, complete per-serving facts |
+| Result experience | Animated macro donut, two-reference nutrition table (portion + per 100 g/ml), confidence/margin review panel, supported-food list, retake action, portion stepper with quick presets |
 | Localization | English/snake_case model labels mapped to Indonesian names (`fried_noodles` → `Olahan Mie`) |
 | Daily diary | Persistent SQLite breakfast/lunch/dinner/snack log with localized names, per-portion nutrition, and daily history totals |
-| About/sources | In-app model metadata, nutrition provenance, privacy notes, and medical disclaimer |
-| Tests | 51 unit/widget tests + one Android device integration test |
+| About/sources | In-app model metadata, closed-set limitations, nutrition provenance, privacy notes, and medical disclaimer |
+| Tests | 59 unit/widget tests + one Android device integration test |
 
 Classes: `Ayam Goreng`, `Bakso`, `Burger`, `French Fries`, `Gado-Gado`, `Ikan Goreng`, `Mie Goreng`, `Nasi Goreng`, `Nasi Padang`, `Pizza`, `Rawon`, `Rendang`, `Sate`, `Soto`.
 
@@ -120,17 +120,20 @@ The app loads the model and nutrition catalog during a bootstrap splash. Once re
 
 1. Tap **Kamera** or **Galeri**.
 2. The scanning line animates while inference runs in a background isolate.
-3. Review the localized food name, AI confidence bar, macro donut, and all per-serving values (calories, protein, carbs, fat, fiber, sodium).
-4. Adjust the portion with the stepper or the ½/1/1½/2-portion presets; every value recalculates instantly.
-5. Tap **Simpan ke Diary**, choose **Sarapan / Makan Siang / Makan Malam / Camilan**, and confirm.
-6. If confidence is low, tap **Foto Ulang** for a better shot or pick an alternative prediction.
+3. Review the localized food name, confidence/margin review panel, macro donut, and the nutrition table (per portion and per 100 g/ml).
+4. If the result is uncertain, check the **Daftar makanan** sheet to confirm your food is one of the 14 supported classes, then retake the photo or pick an alternative.
+5. Adjust the portion with the stepper or the ½/1/1½/2-portion presets; every value recalculates instantly.
+6. Tap **Simpan ke Diary**, choose **Sarapan / Makan Siang / Makan Malam / Camilan**, and confirm. Uncertain results require an extra confirmation first.
 
 No network is required after installation.
 
-### New in `feature/nutrition-result-diary`
+### Result and diary experience
 
 - **Localized labels:** `FoodLabelLocalizer` normalizes model labels (`Fried Noodles`, `fried-noodles`, `fried_noodles`) and maps them to Indonesian names such as **Olahan Mie**.
-- **Confidence bar:** the result card shows a percentage bar with a high/medium/low level; below 60% it reveals an inline **Foto Ulang** action.
+- **Uncertainty review:** confidence below 60% or a top-1/top-2 margin below 10 points triggers a review panel with **Daftar makanan** and **Foto Ulang**. Below 40% the copy explicitly warns that the photo may not contain a supported food.
+- **Supported-food transparency:** the result card lists all 14 classes and explains that the classifier has no `unknown` class, so these warnings are heuristics rather than validated out-of-distribution detection.
+- **Two-reference nutrition table:** every result shows nutrients for the selected portion next to catalog values per 100 g/ml, including macro energy shares, fiber, and sodium, with an estimation caption.
+- **Save confirmation:** uncertain results must be confirmed before the meal picker opens, preventing accidental diary entries from weak predictions.
 - **Live portion modifier:** the stepper is backed by `ScanController`, so the result card and the sticky diary bar always show the same recalculated nutrition.
 - **Daily diary:** the sticky bottom bar opens a meal-category sheet and stores a `DiaryEntry` through `DiaryController` and `DiaryRepository`. Production uses `SqfliteDiaryRepository` backed by local SQLite, while unit tests use `InMemoryDiaryRepository`.
 
@@ -323,7 +326,7 @@ python ml_pipeline/generate_nutrition_data.py \
   --output /tmp/nutrition_check.json
 ```
 
-There are 51 unit/widget tests. They cover inference preprocessing and calibration, nutrition catalog parsing and provenance, portion scaling and daily-total addition, date formatting, label localization, meal-category suggestion, SQLite diary persistence, the diary history screen, the About screen, the confidence/portion result card, the meal picker, and a regression guard that keeps the scan result visible above the diary action bar. The integration test builds a synthetic JPEG, loads the bundled TFLite model, runs one classification in the inference isolate (including calibrated confidence), and joins the result with the nutrition repository.
+There are 59 unit/widget tests. They cover inference preprocessing and calibration, nutrition catalog parsing and provenance, portion scaling and daily-total addition, date formatting, label localization, meal-category suggestion, SQLite diary persistence, the diary history screen, the About screen, confidence/margin heuristics, the two-reference nutrition table, the supported-food sheet, the save-confirmation flow, the meal picker, and a regression guard that keeps the scan result visible above the diary action bar. The integration test builds a synthetic JPEG, loads the bundled TFLite model, runs one classification in the inference isolate (including calibrated confidence), and joins the result with the nutrition repository.
 
 ---
 
@@ -342,6 +345,7 @@ The diary uses `SqfliteDiaryRepository` in `main.dart`, while unit tests keep th
 - Diary entries are stored in a local SQLite database. There is no cloud sync or account system.
 - The model was trained on user-supplied web-style food photos. Verify dataset licensing and validate on your own target population before release.
 - The reported accuracy is held-out accuracy for this 14-class dataset; it is not a guarantee of accuracy for arbitrary photos.
+- The classifier is closed-set: it has no `unknown` class and always returns one of the 14 supported foods. Low-confidence or narrow-margin warnings are heuristics, not validated out-of-distribution detection. Foods outside the supported list cannot be recognized reliably.
 - Nutrition values are universal estimates per 100 g/ml, anchored to TKPI 2017/2018 and USDA FDC where available; composite dishes use standard-recipe estimates. Values vary by recipe and portion.
 - Desktop latency in `model_report.json` is informative only; benchmark on target phones.
 - NutriScan is not a medical device or a substitute for professional advice.
