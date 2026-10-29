@@ -2,7 +2,15 @@
   "schemaVersion": 1,
   "referenceAmount": 100,
   "referenceUnit": "g",
-  "notes": "Nutrition values are estimates per 100 g (or 100 ml for beverages). Replace with values from a verified nutrition database before production release.",
+  "notes": "Nutrition values are universal estimates per 100 g. Values are anchored to TKPI 2017/2018 and USDA FoodData Central where a representative entry exists; composite dishes without a representative entry use standard-recipe estimates. Not a validated food composition database.",
+  "provenance": {
+    "sourceType": "estimation",
+    "sourceCode": "TKPI-2017;USDA-FDC-173292;USDA-FDC-170698;STANDARD-RECIPE",
+    "sourcePage": "multiple",
+    "sourceUrl": "https://repository.kemkes.go.id/book/668",
+    "verifiedAt": "2026-10-28",
+    "note": "Nilai per 100 g adalah estimasi universal. Nilai TKPI/USDA dipakai bila ada entri representatif; hidangan komposit tanpa entri representatif memakai estimasi resep standar. Natrium yang tidak tersedia di TKPI tetap merupakan estimasi."
+  },
   "foods": {
     "ayam_goreng": {
       "displayName": "Ayam Goreng",
@@ -10,14 +18,29 @@
       "category": "main",
       "defaultPortionGrams": 150,
       "nutritionPer100g": {
-        "caloriesKcal": 260,
-        "proteinG": 27,
-        "carbohydrateG": 6,
-        "fatG": 14.5,
-        "fiberG": 0.3,
-        "sodiumMg": 550
+        "caloriesKcal": 283,
+        "proteinG": 35.4,
+        "carbohydrateG": 0.9,
+        "fatG": 14.2,
+        "fiberG": 0.0,
+        "sodiumMg": 681
       },
       "aliases": ["ayam goreng", "fried chicken", "ayam goreng krispi"]
+    },
+    "bakso": {
+      "displayName": "Bakso",
+      "emoji": "🍲",
+      "category": "main",
+      "defaultPortionGrams": 250,
+      "nutritionPer100g": {
+        "caloriesKcal": 76,
+        "proteinG": 4.1,
+        "carbohydrateG": 9.2,
+        "fatG": 2.5,
+        "fiberG": 0.5,
+        "sodiumMg": 480
+      },
+      "aliases": ["bakso", "meatball soup", "bakso sapi", "mie bakso"]
     },
     "burger": {
       "displayName": "Burger",
@@ -25,12 +48,12 @@
       "category": "main",
       "defaultPortionGrams": 200,
       "nutritionPer100g": {
-        "caloriesKcal": 250,
-        "proteinG": 13,
-        "carbohydrateG": 30,
-        "fatG": 9,
-        "fiberG": 1.7,
-        "sodiumMg": 500
+        "caloriesKcal": 258,
+        "proteinG": 10.6,
+        "carbohydrateG": 32.5,
+        "fatG": 9.5,
+        "fiberG": 0.4,
+        "sodiumMg": 572
       },
       "aliases": ["burger", "hamburger", "beef burger"]
     },
@@ -55,11 +78,11 @@
       "category": "main",
       "defaultPortionGrams": 250,
       "nutritionPer100g": {
-        "caloriesKcal": 94,
-        "proteinG": 4.1,
-        "carbohydrateG": 9.5,
-        "fatG": 4.5,
-        "fiberG": 2.8,
+        "caloriesKcal": 137,
+        "proteinG": 6.1,
+        "carbohydrateG": 21.0,
+        "fatG": 3.2,
+        "fiberG": 1.1,
         "sodiumMg": 260
       },
       "aliases": ["gado gado", "gado-gado", "vegetable salad"]
@@ -145,10 +168,10 @@
       "category": "main",
       "defaultPortionGrams": 300,
       "nutritionPer100g": {
-        "caloriesKcal": 130,
-        "proteinG": 10,
-        "carbohydrateG": 5,
-        "fatG": 8,
+        "caloriesKcal": 60,
+        "proteinG": 5.4,
+        "carbohydrateG": 4.0,
+        "fatG": 2.5,
         "fiberG": 0.4,
         "sodiumMg": 620
       },
@@ -162,9 +185,9 @@
       "nutritionPer100g": {
         "caloriesKcal": 193,
         "proteinG": 22.6,
-        "carbohydrateG": 5.2,
-        "fatG": 10.9,
-        "fiberG": 1.1,
+        "carbohydrateG": 7.8,
+        "fatG": 7.9,
+        "fiberG": 0.0,
         "sodiumMg": 480
       },
       "aliases": ["rendang", "beef rendang", "rendang daging"]
@@ -190,11 +213,11 @@
       "category": "main",
       "defaultPortionGrams": 300,
       "nutritionPer100g": {
-        "caloriesKcal": 110,
-        "proteinG": 7,
-        "carbohydrateG": 8,
-        "fatG": 5.5,
-        "fiberG": 0.5,
+        "caloriesKcal": 85,
+        "proteinG": 4.1,
+        "carbohydrateG": 4.6,
+        "fatG": 5.6,
+        "fiberG": 0.3,
         "sodiumMg": 480
       },
       "aliases": ["soto", "soto ayam", "soto daging", "chicken soup"]

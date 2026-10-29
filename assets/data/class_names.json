@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "modelVersion": "2.0.0",
-  "createdAt": "2026-10-22T08:41:34Z",
+  "modelVersion": "2.2.0",
+  "createdAt": "2026-10-28T06:35:59Z",
   "input": {
     "width": 224,
     "height": 224,
@@ -11,6 +11,7 @@
   },
   "labels": [
     "Ayam Goreng",
+    "Bakso",
     "Burger",
     "French Fries",
     "Gado-Gado",
@@ -24,24 +25,24 @@
     "Sate",
     "Soto"
   ],
-  "classCount": 13,
+  "classCount": 14,
   "primaryModel": "food_classifier.tflite",
   "quantization": "fp16",
-  "modelSha256": "d2d5ed50a15643f3e91830bc01c39b97d973b653c76071e22831233baca30d56",
-  "confidenceTemperature": 0.7000000000000002,
+  "modelSha256": "a6e0293d69d12529590fb11b0b116c7bf2739c2fd967c589a66a1857eca9c468",
+  "confidenceTemperature": 0.7,
   "calibration": {
     "method": "temperature_scaling",
     "fitSplit": "validation",
     "temperature": 0.7000000000000002,
     "validation": {
-      "samples": 413,
-      "expectedCalibrationErrorBefore": 0.06731093916576383,
-      "expectedCalibrationErrorAfter": 0.04302714328569694
+      "samples": 457,
+      "expectedCalibrationErrorBefore": 0.06926808604880241,
+      "expectedCalibrationErrorAfter": 0.031797854412724244
     },
     "test": {
       "independent": true,
-      "expectedCalibrationErrorBefore": 0.06156301610401188,
-      "expectedCalibrationErrorAfter": 0.02236961396804385
+      "expectedCalibrationErrorBefore": 0.05938250487548868,
+      "expectedCalibrationErrorAfter": 0.02244033634759926
     }
   }
 }

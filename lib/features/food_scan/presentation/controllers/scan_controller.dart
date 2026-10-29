@@ -85,6 +85,22 @@ final class ScanController extends Notifier<ScanState> {
     }
   }
 
+  /// Applies an absolute portion, clamped to the selected food's safe range.
+  void setPortion(int grams) {
+    final current = state;
+    if (current is! ScanSuccessState) return;
+    final clamped = current.result.selected.food.clampPortion(grams);
+    if (clamped == current.effectivePortionGrams) return;
+    state = current.copyWith(portionGrams: clamped);
+  }
+
+  /// Moves the portion stepper by [deltaGrams] (negative or positive).
+  void adjustPortion(int deltaGrams) {
+    final current = state;
+    if (current is! ScanSuccessState) return;
+    setPortion(current.effectivePortionGrams + deltaGrams);
+  }
+
   void reset() {
     if (isBusy) return;
     state = const ScanIdle();

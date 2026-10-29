@@ -94,6 +94,26 @@ def build_catalog(
     if not isinstance(foods, dict) or not foods:
         raise MetadataError("Seed file must contain a non-empty 'foods' object.")
 
+    provenance_raw = seed.get("provenance")
+    if provenance_raw is not None:
+        if not isinstance(provenance_raw, dict):
+            raise MetadataError("Seed 'provenance' must be an object.")
+        required_provenance = (
+            "sourceType",
+            "sourceCode",
+            "sourcePage",
+            "sourceUrl",
+            "verifiedAt",
+        )
+        missing_provenance = [key for key in required_provenance if key not in provenance_raw]
+        if missing_provenance:
+            raise MetadataError(
+                "Seed 'provenance' is missing fields: " + ", ".join(missing_provenance)
+            )
+        provenance = dict(provenance_raw)
+    else:
+        provenance = None
+
     normalized_seed: dict[str, dict[str, Any]] = {}
     for key, record in foods.items():
         if not isinstance(record, dict):
@@ -197,7 +217,7 @@ def build_catalog(
     if labels != list(class_names):
         raise MetadataError("Internal error: class order changed while building metadata.")
 
-    return {
+    catalog = {
         "schemaVersion": SCHEMA_VERSION,
         "modelVersion": model_version or "unversioned",
         "modelSha256": model_sha256,
@@ -213,6 +233,9 @@ def build_catalog(
             "ingredients. This application is not a medical device."
         ),
     }
+    if provenance is not None:
+        catalog["provenance"] = provenance
+    return catalog
 
 
 def sha256_file(path: Path, chunk_size: int = 1024 * 1024) -> str:

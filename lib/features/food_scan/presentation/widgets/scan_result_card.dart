@@ -1,25 +1,37 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/constants/app_config.dart';
+import '../../../../core/localization/food_label_localizer.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../domain/entities/food_candidate.dart';
 import '../../domain/entities/nutrition_facts.dart';
 import '../../domain/entities/scan_result.dart';
-import 'macro_energy_bar.dart';
+import 'ai_confidence_panel.dart';
+import 'macro_donut_chart.dart';
 import 'nutrition_detail_sheet.dart';
+import 'portion_selector.dart';
 
-/// Prediction + nutrition summary for a completed scan.
+/// Comprehensive, per-serving result view for a completed scan.
+///
+/// This widget is stateless: portion selection, candidate selection, retake,
+/// and diary persistence are owned by the scan controller and the diary
+/// controller respectively.
 final class ScanResultCard extends StatelessWidget {
   const ScanResultCard({
     super.key,
     required this.result,
+    required this.portionGrams,
     required this.onSelectCandidate,
+    required this.onPortionChanged,
+    required this.onRetake,
     required this.onScanAgain,
   });
 
   final ScanResult result;
+  final int portionGrams;
   final ValueChanged<String> onSelectCandidate;
+  final ValueChanged<int> onPortionChanged;
+  final VoidCallback onRetake;
   final VoidCallback onScanAgain;
 
   @override
@@ -29,10 +41,13 @@ final class ScanResultCard extends StatelessWidget {
     final textTheme = theme.textTheme;
     final macros = theme.extension<MacroColors>()!;
     final selected = result.selected;
-    final facts = selected.defaultPortionNutrition;
-    final unit = portionUnitForCategory(selected.food.category);
-    final isLowConfidence =
-        selected.confidence < AppConfig.confidenceWarningThreshold;
+    final food = selected.food;
+    final facts = selected.nutritionForPortion(portionGrams);
+    final unit = portionUnitForCategory(food.category);
+    final displayName = FoodLabelLocalizer.resolve(
+      food.label,
+      displayName: food.displayName,
+    );
     final isTopPrediction = result.selectedIndex == 0;
 
     return Card(
@@ -42,10 +57,11 @@ final class ScanResultCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Container(
-                  width: 56,
-                  height: 56,
+                  width: 58,
+                  height: 58,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                     color: scheme.primaryContainer.withValues(alpha: 0.65),
@@ -53,7 +69,7 @@ final class ScanResultCard extends StatelessWidget {
                   ),
                   child: Text(
                     selected.emoji,
-                    style: const TextStyle(fontSize: 28),
+                    style: const TextStyle(fontSize: 29),
                   ),
                 ),
                 const SizedBox(width: 14),
@@ -73,129 +89,117 @@ final class ScanResultCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        selected.displayName,
+                        displayName,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: textTheme.titleLarge,
                       ),
+                      const SizedBox(height: 6),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: <Widget>[
+                          _MetaChip(
+                            icon: Icons.restaurant_rounded,
+                            label: categoryLabel(food.category),
+                          ),
+                          _MetaChip(
+                            icon: Icons.scale_rounded,
+                            label: formatPortionInUnit(portionGrams, unit),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ),
-                const SizedBox(width: 10),
-                _ConfidenceBadge(
-                  confidence: selected.confidence,
-                  isLow: isLowConfidence,
-                ),
               ],
+            ),
+            const SizedBox(height: 18),
+            AiConfidencePanel(
+              confidence: selected.confidence,
+              onRetake: onRetake,
+            ),
+            const SizedBox(height: 18),
+            PortionSelector(
+              food: food,
+              portionGrams: portionGrams,
+              onChanged: onPortionChanged,
             ),
             const SizedBox(height: 22),
             Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
               children: <Widget>[
-                Text(
-                  '${facts.caloriesKcal.round()}',
-                  style: textTheme.displaySmall?.copyWith(
-                    color: macros.calories,
-                    fontSize: 42,
-                    height: 1,
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 5, left: 4),
+                Expanded(
                   child: Text(
-                    'kkal',
-                    style: textTheme.titleSmall?.copyWith(
-                      color: macros.calories.withValues(alpha: 0.76),
-                      fontWeight: FontWeight.w700,
-                    ),
+                    'Ringkasan gizi',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: textTheme.titleMedium,
                   ),
                 ),
-                const Spacer(),
-                _PortionPill(
-                  label: formatPortionInUnit(
-                    selected.food.defaultPortionGrams,
-                    unit,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'Perkiraan energi untuk porsi ini',
-              style: textTheme.bodySmall?.copyWith(
-                color: scheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 18),
-            MacroEnergyBar(facts: facts),
-            const SizedBox(height: 14),
-            Row(
-              children: <Widget>[
-                Expanded(
-                  child: MacroStatTile(
-                    label: 'Protein',
-                    grams: facts.proteinG,
-                    energyShare: facts.energyShare(MacroNutrient.protein),
-                    color: macros.protein,
-                    containerColor: macros.proteinContainer,
-                    icon: Icons.fitness_center_rounded,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: MacroStatTile(
-                    label: 'Karbo',
-                    grams: facts.carbohydrateG,
-                    energyShare: facts.energyShare(MacroNutrient.carbohydrates),
-                    color: macros.carbohydrates,
-                    containerColor: macros.carbohydratesContainer,
-                    icon: Icons.rice_bowl_rounded,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: MacroStatTile(
-                    label: 'Lemak',
-                    grams: facts.fatG,
-                    energyShare: facts.energyShare(MacroNutrient.fat),
-                    color: macros.fat,
-                    containerColor: macros.fatContainer,
-                    icon: Icons.water_drop_rounded,
+                const SizedBox(width: 10),
+                Text(
+                  'Per ${formatPortionInUnit(portionGrams, unit)}',
+                  maxLines: 1,
+                  style: textTheme.labelSmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
                   ),
                 ),
               ],
             ),
-            if (isLowConfidence) ...<Widget>[
-              const SizedBox(height: 14),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: scheme.tertiaryContainer.withValues(alpha: 0.55),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+            const SizedBox(height: 12),
+            LayoutBuilder(
+              builder: (BuildContext context, BoxConstraints constraints) {
+                final chart = MacroDonutChart(facts: facts);
+                final legend = Column(
                   children: <Widget>[
-                    Icon(
-                      Icons.info_outline_rounded,
-                      size: 18,
-                      color: scheme.onTertiaryContainer,
+                    MacroLegendTile(
+                      label: 'Protein',
+                      grams: facts.proteinG,
+                      energyShare: facts.energyShare(MacroNutrient.protein),
+                      color: macros.protein,
+                      icon: Icons.fitness_center_rounded,
                     ),
-                    const SizedBox(width: 9),
-                    Expanded(
-                      child: Text(
-                        'Keyakinan model masih rendah. Coba foto dari sudut lain '
-                        'atau pilih alternatif di bawah.',
-                        style: textTheme.bodySmall?.copyWith(
-                          color: scheme.onTertiaryContainer,
-                          height: 1.4,
-                        ),
+                    const SizedBox(height: 12),
+                    MacroLegendTile(
+                      label: 'Karbohidrat',
+                      grams: facts.carbohydrateG,
+                      energyShare: facts.energyShare(
+                        MacroNutrient.carbohydrates,
                       ),
+                      color: macros.carbohydrates,
+                      icon: Icons.rice_bowl_rounded,
+                    ),
+                    const SizedBox(height: 12),
+                    MacroLegendTile(
+                      label: 'Lemak',
+                      grams: facts.fatG,
+                      energyShare: facts.energyShare(MacroNutrient.fat),
+                      color: macros.fat,
+                      icon: Icons.water_drop_rounded,
                     ),
                   ],
-                ),
-              ),
-            ],
+                );
+
+                if (constraints.maxWidth >= 430) {
+                  return Row(
+                    children: <Widget>[
+                      chart,
+                      const SizedBox(width: 22),
+                      Expanded(child: legend),
+                    ],
+                  );
+                }
+                return Column(
+                  children: <Widget>[chart, const SizedBox(height: 18), legend],
+                );
+              },
+            ),
+            const SizedBox(height: 18),
+            _NutritionGrid(
+              facts: facts,
+              portionGrams: portionGrams,
+              unit: unit,
+            ),
             if (result.hasAlternatives) ...<Widget>[
               const SizedBox(height: 20),
               Text(
@@ -219,61 +223,42 @@ final class ScanResultCard extends StatelessWidget {
                 ],
               ),
             ],
-            const SizedBox(height: 22),
-            FilledButton.icon(
-              onPressed: () => showNutritionDetailSheet(context, selected),
-              icon: const Icon(Icons.tune_rounded, size: 20),
-              label: const Text('Atur porsi & rincian'),
-            ),
-            const SizedBox(height: 8),
-            OutlinedButton.icon(
-              onPressed: onScanAgain,
-              icon: const Icon(Icons.refresh_rounded, size: 20),
-              label: const Text('Pindai makanan lain'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
+            const SizedBox(height: 20),
+            LayoutBuilder(
+              builder: (BuildContext context, BoxConstraints constraints) {
+                final detailsButton = OutlinedButton.icon(
+                  onPressed: () => showNutritionDetailSheet(
+                    context,
+                    selected,
+                    portionGrams: portionGrams,
+                  ),
+                  icon: const Icon(Icons.receipt_long_rounded, size: 19),
+                  label: const Text('Rincian lengkap'),
+                );
+                final scanAgainButton = TextButton.icon(
+                  onPressed: onScanAgain,
+                  icon: const Icon(Icons.refresh_rounded, size: 19),
+                  label: const Text('Pindai lagi'),
+                );
 
-final class _ConfidenceBadge extends StatelessWidget {
-  const _ConfidenceBadge({required this.confidence, required this.isLow});
-
-  final double confidence;
-  final bool isLow;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final background = isLow
-        ? scheme.tertiaryContainer
-        : scheme.primaryContainer;
-    final foreground = isLow
-        ? scheme.onTertiaryContainer
-        : scheme.onPrimaryContainer;
-    return Tooltip(
-      message: 'Tingkat keyakinan model terhadap prediksi ini',
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-        decoration: BoxDecoration(
-          color: background,
-          borderRadius: BorderRadius.circular(999),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Icon(
-              isLow ? Icons.help_outline_rounded : Icons.verified_rounded,
-              size: 14,
-              color: foreground,
-            ),
-            const SizedBox(width: 4),
-            Text(
-              formatPercent(confidence),
-              style: Theme.of(context).textTheme.labelMedium
-                  ?.copyWith(color: foreground, fontWeight: FontWeight.w800),
+                if (constraints.maxWidth < 360) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      detailsButton,
+                      const SizedBox(height: 4),
+                      scanAgainButton,
+                    ],
+                  );
+                }
+                return Row(
+                  children: <Widget>[
+                    Expanded(child: detailsButton),
+                    const SizedBox(width: 8),
+                    Expanded(child: scanAgainButton),
+                  ],
+                );
+              },
             ),
           ],
         ),
@@ -282,30 +267,195 @@ final class _ConfidenceBadge extends StatelessWidget {
   }
 }
 
-final class _PortionPill extends StatelessWidget {
-  const _PortionPill({required this.label});
+final class _MetaChip extends StatelessWidget {
+  const _MetaChip({required this.icon, required this.label});
 
+  final IconData icon;
   final String label;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest,
+        color: scheme.surfaceContainerHighest.withValues(alpha: 0.7),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Icon(Icons.scale_rounded, size: 14, color: scheme.onSurfaceVariant),
-          const SizedBox(width: 5),
+          Icon(icon, size: 13, color: scheme.onSurfaceVariant),
+          const SizedBox(width: 4),
           Text(
             label,
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
               color: scheme.onSurfaceVariant,
               fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+final class _NutritionGrid extends StatelessWidget {
+  const _NutritionGrid({
+    required this.facts,
+    required this.portionGrams,
+    required this.unit,
+  });
+
+  final NutritionFacts facts;
+  final int portionGrams;
+  final String unit;
+
+  @override
+  Widget build(BuildContext context) {
+    final macros = Theme.of(context).extension<MacroColors>()!;
+    final scheme = Theme.of(context).colorScheme;
+
+    return Column(
+      children: <Widget>[
+        Row(
+          children: <Widget>[
+            Expanded(
+              child: _NutritionFactTile(
+                icon: Icons.local_fire_department_rounded,
+                label: 'Kalori',
+                value: formatKcal(facts.caloriesKcal),
+                color: macros.calories,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _NutritionFactTile(
+                icon: Icons.fitness_center_rounded,
+                label: 'Protein',
+                value: formatGrams(facts.proteinG),
+                color: macros.protein,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: <Widget>[
+            Expanded(
+              child: _NutritionFactTile(
+                icon: Icons.rice_bowl_rounded,
+                label: 'Karbohidrat',
+                value: formatGrams(facts.carbohydrateG),
+                color: macros.carbohydrates,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _NutritionFactTile(
+                icon: Icons.water_drop_rounded,
+                label: 'Lemak',
+                value: formatGrams(facts.fatG),
+                color: macros.fat,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: <Widget>[
+            Expanded(
+              child: _NutritionFactTile(
+                icon: Icons.grass_rounded,
+                label: 'Serat',
+                value: formatGrams(facts.fiberG),
+                color: scheme.tertiary,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _NutritionFactTile(
+                icon: Icons.grain_rounded,
+                label: 'Natrium',
+                value: '${facts.sodiumMg.round()} mg',
+                color: scheme.secondary,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Text(
+          'Nilai gizi dihitung otomatis untuk porsi '
+          '${formatPortionInUnit(portionGrams, unit)}. '
+          'Estimasi dapat berbeda tergantung resep.',
+          textAlign: TextAlign.left,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+            height: 1.4,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+final class _NutritionFactTile extends StatelessWidget {
+  const _NutritionFactTile({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.5)),
+      ),
+      child: Row(
+        children: <Widget>[
+          Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, size: 16, color: color),
+          ),
+          const SizedBox(width: 9),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+                Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -327,13 +477,17 @@ final class _AlternativeChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final displayName = FoodLabelLocalizer.resolve(
+      candidate.label,
+      displayName: candidate.displayName,
+    );
     return ChoiceChip(
       selected: selected,
       showCheckmark: false,
       onSelected: (value) {
         if (value) onSelected();
       },
-      label: Text('${candidate.emoji}  ${candidate.displayName}'),
+      label: Text('${candidate.emoji}  $displayName'),
       tooltip: '${formatPercent(candidate.confidence)} keyakinan',
     );
   }

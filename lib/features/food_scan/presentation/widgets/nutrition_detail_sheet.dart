@@ -1,61 +1,38 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/localization/food_label_localizer.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../domain/entities/food_candidate.dart';
 import '../../domain/entities/nutrition_facts.dart';
 import 'macro_energy_bar.dart';
 
-/// Opens the portion-adjustment and nutrition detail bottom sheet.
+/// Opens the read-only nutrition breakdown for the current portion.
+///
+/// Portion adjustments happen on the result card; this sheet is the detailed
+/// reference view (macros, fiber, sodium, and per-100 g values).
 Future<void> showNutritionDetailSheet(
   BuildContext context,
-  FoodCandidate candidate,
-) {
+  FoodCandidate candidate, {
+  required int portionGrams,
+}) {
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
     builder: (BuildContext context) =>
-        _NutritionDetailSheet(candidate: candidate),
+        _NutritionDetailSheet(candidate: candidate, portionGrams: portionGrams),
   );
 }
 
-final class _NutritionDetailSheet extends StatefulWidget {
-  const _NutritionDetailSheet({required this.candidate});
+final class _NutritionDetailSheet extends StatelessWidget {
+  const _NutritionDetailSheet({
+    required this.candidate,
+    required this.portionGrams,
+  });
 
   final FoodCandidate candidate;
-
-  @override
-  State<_NutritionDetailSheet> createState() => _NutritionDetailSheetState();
-}
-
-final class _NutritionDetailSheetState extends State<_NutritionDetailSheet> {
-  late final String _unit = portionUnitForCategory(
-    widget.candidate.food.category,
-  );
-  late final int _minPortion = widget.candidate.food.defaultPortionGrams <= 100
-      ? 25
-      : 50;
-  late final int _maxPortion = _calculateMaxPortion(
-    widget.candidate.food.defaultPortionGrams,
-  );
-  late int _portion = widget.candidate.food.defaultPortionGrams.clamp(
-    _minPortion,
-    _maxPortion,
-  );
-
-  static int _calculateMaxPortion(int defaultPortion) {
-    final target = (defaultPortion * 2.5 / 10).ceil() * 10;
-    return target < 500 ? 500 : target;
-  }
-
-  NutritionFacts get _facts => widget.candidate.nutritionForPortion(_portion);
-
-  void _setPortion(int value) {
-    final next = value.clamp(_minPortion, _maxPortion);
-    if (next == _portion) return;
-    setState(() => _portion = next);
-  }
+  final int portionGrams;
 
   @override
   Widget build(BuildContext context) {
@@ -63,8 +40,13 @@ final class _NutritionDetailSheetState extends State<_NutritionDetailSheet> {
     final scheme = theme.colorScheme;
     final textTheme = theme.textTheme;
     final macros = theme.extension<MacroColors>()!;
-    final food = widget.candidate.food;
-    final facts = _facts;
+    final food = candidate.food;
+    final facts = candidate.nutritionForPortion(portionGrams);
+    final unit = portionUnitForCategory(food.category);
+    final displayName = FoodLabelLocalizer.resolve(
+      food.label,
+      displayName: food.displayName,
+    );
 
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
@@ -97,15 +79,15 @@ final class _NutritionDetailSheetState extends State<_NutritionDetailSheet> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
                           Text(
-                            food.displayName,
+                            displayName,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: textTheme.titleLarge,
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            '${_categoryLabel(food.category)} · '
-                            '${formatPercent(widget.candidate.confidence)} keyakinan',
+                            '${categoryLabel(food.category)} · '
+                            '${formatPercent(candidate.confidence)} keyakinan',
                             style: textTheme.bodySmall?.copyWith(
                               color: scheme.onSurfaceVariant,
                             ),
@@ -177,7 +159,7 @@ final class _NutritionDetailSheetState extends State<_NutritionDetailSheet> {
                           borderRadius: BorderRadius.circular(999),
                         ),
                         child: Text(
-                          formatPortionInUnit(_portion, _unit),
+                          formatPortionInUnit(portionGrams, unit),
                           style: textTheme.labelMedium?.copyWith(
                             color: macros.calories,
                             fontWeight: FontWeight.w800,
@@ -187,98 +169,13 @@ final class _NutritionDetailSheetState extends State<_NutritionDetailSheet> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 18),
-                Text('Atur porsi', style: textTheme.titleMedium),
-                const SizedBox(height: 10),
-                Container(
-                  padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
-                  decoration: BoxDecoration(
-                    color: scheme.surfaceContainerLow,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: scheme.outlineVariant.withValues(alpha: 0.55),
-                    ),
-                  ),
-                  child: Column(
-                    children: <Widget>[
-                      Row(
-                        children: <Widget>[
-                          IconButton.filledTonal(
-                            onPressed: _portion > _minPortion
-                                ? () => _setPortion(_portion - 10)
-                                : null,
-                            tooltip: 'Kurangi porsi',
-                            icon: const Icon(Icons.remove_rounded),
-                          ),
-                          Expanded(
-                            child: Column(
-                              children: <Widget>[
-                                Text(
-                                  formatPortionInUnit(_portion, _unit),
-                                  style: textTheme.headlineSmall?.copyWith(
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                                Text(
-                                  'Geser untuk menyesuaikan',
-                                  style: textTheme.labelSmall?.copyWith(
-                                    color: scheme.onSurfaceVariant,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          IconButton.filledTonal(
-                            onPressed: _portion < _maxPortion
-                                ? () => _setPortion(_portion + 10)
-                                : null,
-                            tooltip: 'Tambah porsi',
-                            icon: const Icon(Icons.add_rounded),
-                          ),
-                        ],
-                      ),
-                      Slider(
-                        value: _portion.toDouble(),
-                        min: _minPortion.toDouble(),
-                        max: _maxPortion.toDouble(),
-                        divisions: (_maxPortion - _minPortion) ~/ 10,
-                        label: formatPortionInUnit(_portion, _unit),
-                        onChanged: (value) =>
-                            _setPortion((value / 10).round() * 10),
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: <Widget>[
-                          Text(
-                            formatPortionInUnit(_minPortion, _unit),
-                            style: textTheme.labelSmall?.copyWith(
-                              color: scheme.onSurfaceVariant,
-                            ),
-                          ),
-                          Text(
-                            'Porsi awal ${food.defaultPortionGrams} $_unit',
-                            style: textTheme.labelSmall?.copyWith(
-                              color: scheme.onSurfaceVariant,
-                            ),
-                          ),
-                          Text(
-                            formatPortionInUnit(_maxPortion, _unit),
-                            style: textTheme.labelSmall?.copyWith(
-                              color: scheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 22),
+                const SizedBox(height: 20),
                 Row(
                   children: <Widget>[
                     Text('Makronutrien', style: textTheme.titleMedium),
                     const Spacer(),
                     Text(
-                      formatPortionInUnit(_portion, _unit),
+                      formatPortionInUnit(portionGrams, unit),
                       style: textTheme.labelSmall?.copyWith(
                         color: scheme.onSurfaceVariant,
                       ),
@@ -344,10 +241,12 @@ final class _NutritionDetailSheetState extends State<_NutritionDetailSheet> {
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Text(
-                    'Per 100 $_unit: ${formatKcal(food.per100g.caloriesKcal)} · '
+                    'Per 100 $unit: ${formatKcal(food.per100g.caloriesKcal)} · '
                     'P ${formatGrams(food.per100g.proteinG)} · '
                     'K ${formatGrams(food.per100g.carbohydrateG)} · '
-                    'L ${formatGrams(food.per100g.fatG)}',
+                    'L ${formatGrams(food.per100g.fatG)} · '
+                    'Serat ${formatGrams(food.per100g.fiberG)} · '
+                    'Na ${food.per100g.sodiumMg.round()} mg',
                     style: textTheme.bodySmall?.copyWith(
                       color: scheme.onSurfaceVariant,
                       height: 1.45,
@@ -530,10 +429,3 @@ final class _ExtraFactTile extends StatelessWidget {
     );
   }
 }
-
-String _categoryLabel(String category) => switch (category) {
-  'beverage' => 'Minuman',
-  'snack' => 'Camilan',
-  'main' => 'Makanan utama',
-  _ => 'Makanan',
-};

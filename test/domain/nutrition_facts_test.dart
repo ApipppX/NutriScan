@@ -49,6 +49,18 @@ void main() {
       expect(zero.energyShare(MacroNutrient.fat), 0);
     });
 
+    test('adds portions and starts daily totals from zero', () {
+      final total =
+          NutritionFacts.zero + per100g.forGrams(100) + per100g.forGrams(50);
+
+      expect(total.caloriesKcal, closeTo(300, 1e-9));
+      expect(total.proteinG, closeTo(15, 1e-9));
+      expect(total.carbohydrateG, closeTo(30, 1e-9));
+      expect(total.fatG, closeTo(7.5, 1e-9));
+      expect(total.fiberG, closeTo(3, 1e-9));
+      expect(total.sodiumMg, closeTo(450, 1e-9));
+    });
+
     test('rejects negative portions', () {
       expect(() => per100g.forGrams(-1), throwsArgumentError);
     });
