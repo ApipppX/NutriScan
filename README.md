@@ -5,7 +5,9 @@ NutriScan is a fully offline food image classifier and nutrition estimator:
 - **Flutter app** (Android/iOS) that picks or captures a photo, classifies it with an on-device TFLite model, and shows calories + macronutrients per adjustable portion.
 - **Python/TensorFlow pipeline** that transfer-trains MobileNetV3, evaluates it, exports dynamic-range and FP16 TFLite variants, and generates the label/nutrition metadata the app consumes.
 
-No image ever leaves the device. The Android manifest intentionally declares no `INTERNET` permission, and explicitly removes legacy storage/phone permissions implied by the TFLite GPU AAR.
+No image ever leaves the device. The release Android manifest (`src/main`) intentionally declares no `INTERNET` permission; the debug/profile overlays add it only so Flutter tooling can attach. The manifest also explicitly removes legacy storage/phone permissions implied by the TFLite GPU AAR.
+
+> **Development build, limited scope:** NutriScan is an in-development app, not a medical device. It recognizes only the **14 foods in the bundled dataset** listed below. The model is closed-set and has no `unknown` class, so any other food is still forced into one of the 14 labels. The app shows a persistent development/scope notice, heuristic uncertainty warnings, and an optional confirmation step before saving an uncertain result.
 
 > **Model data:** the bundled model combines the public Kaggle [Indonesian Food Dataset](https://www.kaggle.com/datasets/rizkyyk/dataset-food-classification) (13 classes, MIT, web-collected by its uploader) with the Mendeley [Indonesian Food Image](https://data.mendeley.com/datasets/vtjd68bmwt/1) dataset (six supplemental classes and Bakso, CC BY 4.0, web-collected by its creator). The source images are not included in this repository. These are the licenses declared by the dataset providers; image copyright remains with the original owners. Verify licensing, nutrition values, and real-world accuracy before shipping.
 
@@ -24,11 +26,11 @@ No image ever leaves the device. The Android manifest intentionally declares no 
 | Nutrition | Per-100 g values in `nutrition_data.json`, indexed to model outputs |
 | Inference | Long-lived background isolate; no per-scan interpreter reload |
 | UI | Material 3, Indonesian copy, light/dark theme, idle/loading/success/error states |
-| Result experience | Animated macro donut, two-reference nutrition table (portion + per 100 g/ml), estimate badge with provisional state for uncertain results, confidence/margin review panel, supported-food list, retake action, portion stepper with quick presets |
+| Result experience | Persistent development/scope notice, animated macro donut, two-reference nutrition table (portion + per 100 g/ml), estimate badge with provisional state for uncertain results, confidence/margin/top-3 mass review panel, supported-food list, retake action, portion stepper with quick presets |
 | Localization | English/snake_case model labels mapped to Indonesian names (`fried_noodles` → `Olahan Mie`) |
 | Daily diary | Persistent SQLite breakfast/lunch/dinner/snack log with localized names, per-portion nutrition, and daily history totals |
-| About/sources | In-app model metadata, closed-set limitations, nutrition provenance, privacy notes, and medical disclaimer |
-| Tests | 60 unit/widget tests + one Android device integration test |
+| About/sources | In-app model metadata, development status, closed-set limitations, dataset attribution, nutrition provenance, privacy notes, and medical disclaimer |
+| Tests | 62 unit/widget tests + one Android device integration test |
 
 Classes: `Ayam Goreng`, `Bakso`, `Burger`, `French Fries`, `Gado-Gado`, `Ikan Goreng`, `Mie Goreng`, `Nasi Goreng`, `Nasi Padang`, `Pizza`, `Rawon`, `Rendang`, `Sate`, `Soto`.
 
@@ -120,17 +122,19 @@ The app loads the model and nutrition catalog during a bootstrap splash. Once re
 
 1. Tap **Kamera** or **Galeri**.
 2. The scanning line animates while inference runs in a background isolate.
-3. Review the localized food name, the **Estimasi** badge, confidence/margin review panel, macro donut, and the nutrition table (per portion and per 100 g/ml).
-4. If the result is uncertain, check the **Daftar makanan** sheet to confirm your food is one of the 14 supported classes, then retake the photo or pick an alternative.
-5. Adjust the portion with the stepper or the ½/1/1½/2-portion presets; every value recalculates instantly.
-6. Tap **Simpan ke Diary**, choose **Sarapan / Makan Siang / Makan Malam / Camilan**, and confirm. Uncertain results require an extra confirmation first.
+3. Review the persistent development/scope notice and the supported-food count. If your food is not one of the 14 classes, do not trust the prediction.
+4. Review the localized food name, the **Estimasi** badge, confidence/margin analysis, macro donut, and the nutrition table (per portion and per 100 g/ml).
+5. If the result is uncertain, check the **Daftar makanan** sheet to confirm your food is one of the 14 supported classes, then retake the photo or pick an alternative.
+6. Adjust the portion with the stepper or the ½/1/1½/2-portion presets; every value recalculates instantly.
+7. Tap **Simpan ke Diary**, choose **Sarapan / Makan Siang / Makan Malam / Camilan**, and confirm. Uncertain results require an extra confirmation first.
 
 No network is required after installation.
 
 ### Result and diary experience
 
 - **Localized labels:** `FoodLabelLocalizer` normalizes model labels (`Fried Noodles`, `fried-noodles`, `fried_noodles`) and maps them to Indonesian names such as **Olahan Mie**.
-- **Uncertainty review:** confidence below 60% or a top-1/top-2 margin below 10 points triggers a review panel with **Daftar makanan** and **Foto Ulang**. Below 40% the copy explicitly warns that the photo may not contain a supported food.
+- **Development/scope disclosure:** the scanner always shows that this is a development build and how many foods the dataset supports. The full notice opens the 14-item supported-food sheet and the About/limitations screen; a compact version stays visible on result and failure screens. The footer repeats the closed-set and non-medical disclaimer.
+- **Uncertainty review:** confidence below 60%, a top-1/top-2 margin below 10 points, or a top-3 probability mass below 75% triggers a review panel with **Daftar makanan** and **Foto Ulang**. Below 40% the copy explicitly warns that the photo may not contain a supported food. The top-3 mass flags diffuse predictions that a simple top-1 threshold would miss; all three signals are heuristics, not validated out-of-distribution detection.
 - **Supported-food transparency:** the result card lists all 14 classes and explains that the classifier has no `unknown` class, so these warnings are heuristics rather than validated out-of-distribution detection.
 - **Two-reference nutrition table:** every successful scan shows nutrients for the selected portion next to catalog values per 100 g/ml, including macro energy shares, fiber, and sodium. An **Estimasi** badge sits next to the food name/portion, and the caption states that values are computed from the catalog, not laboratory analysis, and may vary with the recipe.
 - **Provisional estimate state:** results that need review show **Estimasi sementara** instead of **Estimasi**; the numbers stay visible, but the caption asks the user to verify the food before saving.
@@ -327,7 +331,7 @@ python ml_pipeline/generate_nutrition_data.py \
   --output /tmp/nutrition_check.json
 ```
 
-There are 60 unit/widget tests. They cover inference preprocessing and calibration, nutrition catalog parsing and provenance, portion scaling and daily-total addition, date formatting, label localization, meal-category suggestion, SQLite diary persistence, the diary history screen, the About screen, confidence/margin heuristics, the estimate badge and provisional caption, the two-reference nutrition table, the supported-food sheet, the save-confirmation flow, the meal picker, failed-scan recovery without nutrition output, and a regression guard that keeps the scan result visible above the diary action bar. The integration test builds a synthetic JPEG, loads the bundled TFLite model, runs one classification in the inference isolate (including calibrated confidence), and joins the result with the nutrition repository.
+There are 62 unit/widget tests. They cover inference preprocessing and calibration, nutrition catalog parsing and provenance, portion scaling and daily-total addition, date formatting, label localization, meal-category suggestion, SQLite diary persistence, the diary history screen, the About screen, confidence/margin/top-3-mass heuristics, the development/scope notice, the estimate badge and provisional caption, the two-reference nutrition table, the supported-food sheet, the save-confirmation flow, the meal picker, failed-scan recovery without nutrition output, and a regression guard that keeps the scan result visible above the diary action bar. The integration test builds a synthetic JPEG, loads the bundled TFLite model, runs one classification in the inference isolate (including calibrated confidence), and joins the result with the nutrition repository.
 
 ---
 

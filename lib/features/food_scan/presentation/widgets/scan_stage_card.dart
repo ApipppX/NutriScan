@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/app_theme.dart';
 import '../state/scan_state.dart';
 
 /// Hero card that hosts the photo, live camera/gallery actions, and the
@@ -23,6 +24,8 @@ final class ScanStageCard extends StatelessWidget {
     final isProcessing = state is ScanProcessing;
     final isSuccess = state is ScanSuccessState;
     final isFailure = state is ScanFailureState;
+    final scheme = Theme.of(context).colorScheme;
+    final stageColors = AppTheme.stageGradient(scheme);
 
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
@@ -40,21 +43,17 @@ final class ScanStageCard extends StatelessWidget {
             height: height,
             clipBehavior: Clip.antiAlias,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(30),
-              gradient: const LinearGradient(
+              borderRadius: BorderRadius.circular(28),
+              gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: <Color>[
-                  Color(0xFF101F15),
-                  Color(0xFF1B3524),
-                  Color(0xFF274530),
-                ],
+                colors: stageColors,
               ),
               boxShadow: <BoxShadow>[
                 BoxShadow(
-                  color: const Color(0xFF122418).withValues(alpha: 0.35),
-                  blurRadius: 34,
-                  offset: const Offset(0, 18),
+                  color: stageColors.first.withValues(alpha: 0.32),
+                  blurRadius: 32,
+                  offset: const Offset(0, 16),
                 ),
               ],
             ),
@@ -150,7 +149,10 @@ final class _EmptyStage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+    final accent = AppTheme.stageAccent(scheme);
     return Stack(
       fit: StackFit.expand,
       children: <Widget>[
@@ -176,12 +178,10 @@ final class _EmptyStage extends StatelessWidget {
                   height: 70,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Colors.white.withValues(alpha: 0.08),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.16),
-                    ),
+                    color: accent.withValues(alpha: 0.12),
+                    border: Border.all(color: accent.withValues(alpha: 0.3)),
                   ),
-                  child: Icon(icon, size: 31, color: const Color(0xFFE8F4E4)),
+                  child: Icon(icon, size: 31, color: accent),
                 ),
                 const SizedBox(height: 15),
                 Text(
@@ -215,15 +215,13 @@ final class _StageGlow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final glow = AppTheme.stageAccent(Theme.of(context).colorScheme);
     return DecoratedBox(
       decoration: BoxDecoration(
         gradient: RadialGradient(
           center: const Alignment(0.35, -0.75),
           radius: 1.1,
-          colors: <Color>[
-            const Color(0xFF7BCB86).withValues(alpha: 0.20),
-            Colors.transparent,
-          ],
+          colors: <Color>[glow.withValues(alpha: 0.18), Colors.transparent],
         ),
       ),
     );
@@ -235,18 +233,19 @@ final class _StageScrim extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const DecoratedBox(
+    final veil = AppTheme.stageGradient(Theme.of(context).colorScheme).first;
+    return DecoratedBox(
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: <Color>[
-            Color(0x6B000000),
-            Color(0x00000000),
-            Color(0x22000000),
-            Color(0xC708120A),
+            Colors.black.withValues(alpha: 0.42),
+            Colors.transparent,
+            Colors.black.withValues(alpha: 0.12),
+            veil.withValues(alpha: 0.84),
           ],
-          stops: <double>[0, 0.26, 0.58, 1],
+          stops: const <double>[0, 0.26, 0.58, 1],
         ),
       ),
     );
@@ -298,27 +297,27 @@ final class _StatusPill extends StatelessWidget {
       (_, _, true) => (Icons.error_outline_rounded, 'BELUM BERHASIL'),
       _ => (Icons.auto_awesome_rounded, 'SIAP MEMINDAI'),
     };
+    final scheme = Theme.of(context).colorScheme;
+    final accent = AppTheme.stageAccent(scheme);
+    final pillColor = AppTheme.stageGradient(scheme).first;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.32),
+        color: pillColor.withValues(alpha: 0.72),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
+        border: Border.all(color: accent.withValues(alpha: 0.26)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           if (isProcessing)
-            const SizedBox(
+            SizedBox(
               width: 12,
               height: 12,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: Color(0xFFBFE8C4),
-              ),
+              child: CircularProgressIndicator(strokeWidth: 2, color: accent),
             )
           else
-            Icon(icon, size: 14, color: const Color(0xFFD7EFD5)),
+            Icon(icon, size: 14, color: accent),
           const SizedBox(width: 7),
           Text(
             label,
@@ -339,19 +338,16 @@ final class _ResultGlyph extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accent = AppTheme.stageAccent(Theme.of(context).colorScheme);
     return Container(
       width: 34,
       height: 34,
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.13),
+        color: accent.withValues(alpha: 0.12),
         shape: BoxShape.circle,
-        border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
+        border: Border.all(color: accent.withValues(alpha: 0.24)),
       ),
-      child: const Icon(
-        Icons.restaurant_rounded,
-        size: 17,
-        color: Colors.white,
-      ),
+      child: Icon(Icons.restaurant_rounded, size: 17, color: accent),
     );
   }
 }
@@ -364,15 +360,21 @@ final class _IdleActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final cameraBackground = Color.lerp(scheme.primary, Colors.white, 0.84)!;
+    final cameraForeground = Color.lerp(scheme.primary, Colors.black, 0.74)!;
+
     return Row(
       children: <Widget>[
         Expanded(
           child: FilledButton.icon(
             onPressed: onCamera,
             style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFFE9F4E2),
-              foregroundColor: const Color(0xFF17351E),
+              backgroundColor: cameraBackground,
+              foregroundColor: cameraForeground,
               minimumSize: const Size(0, 54),
+              elevation: 0,
+              shadowColor: Colors.transparent,
             ),
             icon: const Icon(Icons.photo_camera_rounded, size: 20),
             label: const Text('Kamera'),
@@ -385,6 +387,7 @@ final class _IdleActions extends StatelessWidget {
             style: OutlinedButton.styleFrom(
               foregroundColor: Colors.white,
               minimumSize: const Size(0, 54),
+              backgroundColor: Colors.black.withValues(alpha: 0.16),
               side: BorderSide(color: Colors.white.withValues(alpha: 0.34)),
             ),
             icon: const Icon(Icons.photo_library_outlined, size: 19),
@@ -401,23 +404,23 @@ final class _ProcessingFooter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
+    final theme = Theme.of(context);
+    final textTheme = theme.textTheme;
+    final accent = AppTheme.stageAccent(theme.colorScheme);
+    final veil = AppTheme.stageGradient(theme.colorScheme).first;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.4),
+        color: veil.withValues(alpha: 0.78),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
+        border: Border.all(color: accent.withValues(alpha: 0.2)),
       ),
       child: Row(
         children: <Widget>[
-          const SizedBox(
+          SizedBox(
             width: 18,
             height: 18,
-            child: CircularProgressIndicator(
-              strokeWidth: 2.2,
-              color: Color(0xFFBFE8C4),
-            ),
+            child: CircularProgressIndicator(strokeWidth: 2.2, color: accent),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -464,6 +467,8 @@ final class _ScanningOverlayState extends State<ScanningOverlay>
 
   @override
   Widget build(BuildContext context) {
+    final accent = AppTheme.stageAccent(Theme.of(context).colorScheme);
+    final lineColor = Color.lerp(accent, Colors.white, 0.35)!;
     return IgnorePointer(
       child: AnimatedBuilder(
         animation: _controller,
@@ -484,7 +489,7 @@ final class _ScanningOverlayState extends State<ScanningOverlay>
                       end: Alignment.bottomCenter,
                       colors: <Color>[
                         Colors.transparent,
-                        const Color(0xFF8FE09C).withValues(alpha: 0.20),
+                        accent.withValues(alpha: 0.2),
                       ],
                     ),
                   ),
@@ -493,16 +498,16 @@ final class _ScanningOverlayState extends State<ScanningOverlay>
                   height: 2,
                   margin: const EdgeInsets.symmetric(horizontal: 22),
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
+                    gradient: LinearGradient(
                       colors: <Color>[
-                        Color(0x008FE09C),
-                        Color(0xFFC6F5CB),
-                        Color(0x008FE09C),
+                        accent.withValues(alpha: 0),
+                        lineColor,
+                        accent.withValues(alpha: 0),
                       ],
                     ),
                     boxShadow: <BoxShadow>[
                       BoxShadow(
-                        color: const Color(0xFF9BE7A8).withValues(alpha: 0.75),
+                        color: lineColor.withValues(alpha: 0.7),
                         blurRadius: 14,
                         spreadRadius: 2,
                       ),

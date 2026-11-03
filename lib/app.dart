@@ -16,6 +16,8 @@ final class NutriScanApp extends StatelessWidget {
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: ThemeMode.system,
+      themeAnimationDuration: const Duration(milliseconds: 300),
+      themeAnimationCurve: Curves.easeOutCubic,
       locale: const Locale('id'),
       supportedLocales: const <Locale>[Locale('id'), Locale('en')],
       localizationsDelegates: const <LocalizationsDelegate<dynamic>>[

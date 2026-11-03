@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 
-/// Idle-state guidance: how it works and what makes a good photo.
+/// Idle-state guidance: how it works, what makes a good photo, and which menu
+/// the closed-set model actually supports.
 final class ScannerOnboarding extends StatelessWidget {
-  const ScannerOnboarding({super.key});
+  const ScannerOnboarding({super.key, required this.supportedCount});
+
+  final int supportedCount;
 
   @override
   Widget build(BuildContext context) {
@@ -18,9 +21,26 @@ final class ScannerOnboarding extends StatelessWidget {
           children: <Widget>[
             Row(
               children: <Widget>[
-                Icon(Icons.explore_outlined, size: 20, color: scheme.primary),
-                const SizedBox(width: 8),
-                Text('Cara pakai', style: textTheme.titleMedium),
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: scheme.primaryContainer.withValues(alpha: 0.7),
+                    borderRadius: BorderRadius.circular(11),
+                  ),
+                  child: Icon(
+                    Icons.explore_outlined,
+                    size: 19,
+                    color: scheme.onPrimaryContainer,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  'Cara pakai',
+                  style: textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 16),
@@ -32,11 +52,13 @@ final class ScannerOnboarding extends StatelessWidget {
                   'Posisikan satu piring dalam frame, dari atas bila bisa.',
             ),
             const SizedBox(height: 13),
-            const _StepRow(
+            _StepRow(
               number: '2',
               icon: Icons.memory_rounded,
               title: 'AI mengenali makanan',
-              description: 'Model berjalan langsung di perangkat, tanpa koneksi internet.',
+              description:
+                  'Model hanya mengenali $supportedCount menu dari dataset '
+                  'dan berjalan lokal, tanpa internet.',
             ),
             const SizedBox(height: 13),
             const _StepRow(
@@ -97,39 +119,57 @@ final class _StepRow extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Container(
-          width: 38,
-          height: 38,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: scheme.primaryContainer.withValues(alpha: 0.65),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(icon, size: 19, color: scheme.onPrimaryContainer),
+        Stack(
+          clipBehavior: Clip.none,
+          children: <Widget>[
+            Container(
+              width: 38,
+              height: 38,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: scheme.primaryContainer.withValues(alpha: 0.65),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: scheme.primary.withValues(alpha: 0.1),
+                ),
+              ),
+              child: Icon(icon, size: 19, color: scheme.onPrimaryContainer),
+            ),
+            Positioned(
+              right: -5,
+              bottom: -5,
+              child: Container(
+                width: 18,
+                height: 18,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: scheme.primary,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: scheme.surface, width: 2),
+                ),
+                child: Text(
+                  number,
+                  style: textTheme.labelSmall?.copyWith(
+                    color: scheme.onPrimary,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w800,
+                    height: 1,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Row(
-                children: <Widget>[
-                  Text(
-                    '$number. ',
-                    style: textTheme.labelMedium?.copyWith(
-                      color: scheme.primary,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ],
+              Text(
+                title,
+                style: textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
               ),
               const SizedBox(height: 2),
               Text(
@@ -159,8 +199,9 @@ final class _TipChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest.withValues(alpha: 0.65),
+        color: scheme.surfaceContainerHigh.withValues(alpha: 0.7),
         borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.5)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

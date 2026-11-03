@@ -16,6 +16,8 @@ final class AiConfidencePanel extends StatelessWidget {
     required this.onRetake,
     required this.onShowSupportedFoods,
     this.margin,
+    this.topThreeMass,
+    this.supportedCount,
     this.isManualSelection = false,
     this.threshold = AppConfig.confidenceWarningThreshold,
   });
@@ -25,6 +27,12 @@ final class AiConfidencePanel extends StatelessWidget {
 
   /// Top-1 minus top-2 confidence. Null when there is only one candidate.
   final double? margin;
+
+  /// Total probability of the returned top-3 candidates.
+  final double? topThreeMass;
+
+  /// Number of menu classes in the bundled closed-set model.
+  final int? supportedCount;
 
   final VoidCallback onRetake;
   final VoidCallback onShowSupportedFoods;
@@ -36,9 +44,13 @@ final class AiConfidencePanel extends StatelessWidget {
   bool get _isAmbiguous =>
       margin != null && margin! < AppConfig.confidenceMarginThreshold;
 
+  bool get _isDiffuse =>
+      topThreeMass != null && topThreeMass! < AppConfig.topThreeMassThreshold;
+
   bool get _isCritical => confidence < AppConfig.confidenceCriticalThreshold;
 
-  bool get _needsReview => !isManualSelection && (_isLow || _isAmbiguous);
+  bool get _needsReview =>
+      !isManualSelection && (_isLow || _isAmbiguous || _isDiffuse);
 
   @override
   Widget build(BuildContext context) {
@@ -128,7 +140,8 @@ final class AiConfidencePanel extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  'Ambang aman ${formatPercent(threshold, decimals: 0)}',
+                  'Ambang peringatan '
+                  '${formatPercent(threshold, decimals: 0)}',
                   textAlign: TextAlign.end,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -140,20 +153,70 @@ final class AiConfidencePanel extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(999),
-            child: LinearProgressIndicator(
-              value: confidence.clamp(0.0, 1.0),
-              minHeight: 9,
-              color: levelColor,
-              backgroundColor: levelColor.withValues(alpha: 0.14),
-            ),
+          LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints constraints) {
+              final marker = (threshold * constraints.maxWidth)
+                  .clamp(0.0, constraints.maxWidth)
+                  .toDouble();
+              return Stack(
+                clipBehavior: Clip.none,
+                children: <Widget>[
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(999),
+                    child: LinearProgressIndicator(
+                      value: confidence.clamp(0.0, 1.0),
+                      minHeight: 9,
+                      color: levelColor,
+                      backgroundColor: levelColor.withValues(alpha: 0.14),
+                    ),
+                  ),
+                  Positioned(
+                    left: marker - 0.75,
+                    top: -2,
+                    bottom: -2,
+                    child: Container(
+                      width: 1.5,
+                      decoration: BoxDecoration(
+                        color: scheme.onSurfaceVariant.withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
+          if (supportedCount != null) ...<Widget>[
+            const SizedBox(height: 10),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Icon(
+                  Icons.dataset_outlined,
+                  size: 14,
+                  color: scheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'Model hanya mengenali $supportedCount menu dari dataset; '
+                    'makanan lain bisa salah diklasifikasi.',
+                    style: textTheme.labelSmall?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                      height: 1.4,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
           if (_needsReview) ...<Widget>[
             const SizedBox(height: 14),
             _ReviewCallout(
               isCritical: _isCritical,
               isAmbiguous: _isAmbiguous && !_isLow,
+              isDiffuse: _isDiffuse && !_isLow && !_isAmbiguous,
+              supportedCount: supportedCount,
               onRetake: onRetake,
               onShowSupportedFoods: onShowSupportedFoods,
             ),
@@ -188,7 +251,7 @@ final class AiConfidencePanel extends StatelessWidget {
 
   Color _levelColor(ColorScheme scheme) {
     if (_isCritical || _isLow) return scheme.error;
-    if (_isAmbiguous || confidence < 0.8) return scheme.tertiary;
+    if (_isAmbiguous || _isDiffuse || confidence < 0.8) return scheme.tertiary;
     return scheme.primary;
   }
 
@@ -196,6 +259,7 @@ final class AiConfidencePanel extends StatelessWidget {
     if (_isCritical) return 'Sangat rendah';
     if (_isLow) return 'Rendah';
     if (_isAmbiguous) return 'Ambigu';
+    if (_isDiffuse) return 'Tersebar';
     if (confidence < 0.8) return 'Cukup';
     return 'Tinggi';
   }
@@ -205,12 +269,16 @@ final class _ReviewCallout extends StatelessWidget {
   const _ReviewCallout({
     required this.isCritical,
     required this.isAmbiguous,
+    required this.isDiffuse,
+    required this.supportedCount,
     required this.onRetake,
     required this.onShowSupportedFoods,
   });
 
   final bool isCritical;
   final bool isAmbiguous;
+  final bool isDiffuse;
+  final int? supportedCount;
   final VoidCallback onRetake;
   final VoidCallback onShowSupportedFoods;
 
@@ -224,18 +292,26 @@ final class _ReviewCallout extends StatelessWidget {
     final foreground = isCritical
         ? scheme.onErrorContainer
         : scheme.onTertiaryContainer;
+    final countText = supportedCount == null ? '' : ' ($supportedCount menu)';
     final title = isCritical
-        ? 'Makanan mungkin tidak dikenali'
+        ? 'Kemungkinan bukan menu yang didukung'
+        : isDiffuse
+        ? 'Prediksi tersebar'
         : 'Hasil perlu diperiksa';
     final body = isCritical
-        ? 'Model tidak cukup yakin. Foto ini mungkin bukan salah satu makanan '
-              'yang didukung. Jangan gunakan nilai gizinya tanpa memeriksa '
-              'ulang.'
+        ? 'Keyakinan model sangat rendah. Foto ini mungkin bukan salah satu '
+              'makanan yang didukung$countText. Hasil dan nilai gizinya '
+              'berisiko tidak valid.'
+        : isDiffuse
+        ? 'Model mempertimbangkan banyak menu sekaligus. Foto mungkin bukan '
+              'menu yang didukung, atau objeknya kurang jelas. Periksa daftar '
+              'menu atau foto ulang sebelum menyimpan.'
         : isAmbiguous
         ? 'Dua prediksi teratas hampir sama kuat. Pilih alternatif yang paling '
-              'sesuai atau foto ulang.'
-        : 'Keyakinan model rendah. NutriScan hanya mengenali makanan di daftar '
-              'dukungan, jadi hasil teratas bisa salah.';
+              'sesuai, periksa daftar menu, atau foto ulang.'
+        : 'Keyakinan model rendah. NutriScan hanya mengenali menu di dataset, '
+              'jadi hasil teratas bisa salah. Periksa daftar menu atau foto '
+              'ulang.';
 
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
@@ -281,39 +357,54 @@ final class _ReviewCallout extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          Wrap(
-            alignment: WrapAlignment.end,
-            spacing: 8,
-            runSpacing: 4,
-            children: <Widget>[
-              OutlinedButton.icon(
+          const SizedBox(height: 12),
+          LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints constraints) {
+              final listButton = OutlinedButton.icon(
                 onPressed: onShowSupportedFoods,
                 style: OutlinedButton.styleFrom(
                   foregroundColor: foreground,
                   side: BorderSide(color: foreground.withValues(alpha: 0.45)),
                   minimumSize: const Size(0, 44),
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
+                    horizontal: 12,
                     vertical: 10,
                   ),
                 ),
                 icon: const Icon(Icons.list_alt_rounded, size: 18),
                 label: const Text('Daftar makanan'),
-              ),
-              FilledButton.tonalIcon(
+              );
+              final retakeButton = FilledButton.tonalIcon(
                 onPressed: onRetake,
                 style: FilledButton.styleFrom(
                   minimumSize: const Size(0, 44),
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
+                    horizontal: 12,
                     vertical: 10,
                   ),
                 ),
                 icon: const Icon(Icons.photo_camera_rounded, size: 18),
                 label: const Text('Foto Ulang'),
-              ),
-            ],
+              );
+
+              if (constraints.maxWidth < 320) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    listButton,
+                    const SizedBox(height: 8),
+                    retakeButton,
+                  ],
+                );
+              }
+              return Row(
+                children: <Widget>[
+                  Expanded(child: listButton),
+                  const SizedBox(width: 8),
+                  Expanded(child: retakeButton),
+                ],
+              );
+            },
           ),
         ],
       ),

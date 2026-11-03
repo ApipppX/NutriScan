@@ -118,6 +118,10 @@ void main() {
     );
     expect(find.text('87,4%'), findsOneWidget);
     expect(find.text('Keyakinan AI'), findsOneWidget);
+    expect(
+      find.textContaining('Model hanya mengenali 2 menu dari dataset'),
+      findsOneWidget,
+    );
     expect(find.text('Energi'), findsOneWidget);
     expect(find.text('Protein'), findsWidgets);
     expect(find.text('Karbohidrat'), findsWidgets);
@@ -307,7 +311,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Sangat rendah'), findsOneWidget);
-      expect(find.text('Makanan mungkin tidak dikenali'), findsOneWidget);
+      expect(find.text('Kemungkinan bukan menu yang didukung'), findsOneWidget);
       expect(find.text('Estimasi sementara'), findsOneWidget);
       expect(
         find.textContaining('bukan salah satu makanan yang didukung'),
@@ -363,4 +367,61 @@ void main() {
       findsOneWidget,
     );
   });
+
+  testWidgets(
+    'diffuse top-three mass is flagged even above the low threshold',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(390, 844));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      final result = ScanResult(
+        candidates: <FoodCandidate>[
+          _candidate(
+            index: 4,
+            label: 'mie_goreng',
+            displayName: 'Mie Goreng',
+            emoji: '🍜',
+            confidence: 0.62,
+            portion: 250,
+          ),
+          _candidate(
+            index: 3,
+            label: 'nasi_goreng',
+            displayName: 'Nasi Goreng',
+            emoji: '🍚',
+            confidence: 0.05,
+            portion: 220,
+          ),
+          _candidate(
+            index: 5,
+            label: 'bakso',
+            displayName: 'Bakso',
+            emoji: '🍲',
+            confidence: 0.03,
+            portion: 240,
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        _host(
+          result: result,
+          portionGrams: 250,
+          onPortionChanged: (_) {},
+          onRetake: () {},
+          onSelectCandidate: (_) {},
+          onScanAgain: () {},
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Tersebar'), findsOneWidget);
+      expect(find.text('Prediksi tersebar'), findsOneWidget);
+      expect(find.text('Estimasi sementara'), findsOneWidget);
+      expect(
+        find.textContaining('mempertimbangkan banyak menu sekaligus'),
+        findsOneWidget,
+      );
+    },
+  );
 }

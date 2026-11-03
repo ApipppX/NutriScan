@@ -15,6 +15,11 @@ abstract final class AppConfig {
   /// Minimum top-1/top-2 gap before a prediction is considered ambiguous.
   static const double confidenceMarginThreshold = 0.10;
 
+  /// Below this top-3 probability mass, the model is spreading its belief over
+  /// many classes. This is a heuristic for a diffuse/out-of-scope scan, not a
+  /// validated out-of-distribution detector.
+  static const double topThreeMassThreshold = 0.75;
+
   /// Guards against a stalled native inference call.
   static const Duration inferenceTimeout = Duration(seconds: 25);
 

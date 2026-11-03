@@ -65,70 +65,94 @@ final class ScanResultCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Container(
-                  width: 58,
-                  height: 58,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: scheme.primaryContainer.withValues(alpha: 0.65),
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  child: Text(
-                    selected.emoji,
-                    style: const TextStyle(fontSize: 29),
-                  ),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: <Color>[
+                    scheme.primaryContainer.withValues(alpha: 0.58),
+                    scheme.surfaceContainerLow.withValues(alpha: 0.82),
+                  ],
                 ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(
-                        isTopPrediction
-                            ? 'Prediksi utama'
-                            : 'Alternatif pilihan',
-                        style: textTheme.labelSmall?.copyWith(
-                          color: scheme.onSurfaceVariant,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.8,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: scheme.primary.withValues(alpha: 0.12),
+                ),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Container(
+                    width: 56,
+                    height: 56,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: scheme.surface.withValues(alpha: 0.82),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: scheme.primary.withValues(alpha: 0.12),
+                      ),
+                    ),
+                    child: Text(
+                      selected.emoji,
+                      style: const TextStyle(fontSize: 28),
+                    ),
+                  ),
+                  const SizedBox(width: 13),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          isTopPrediction
+                              ? 'Prediksi utama'
+                              : 'Alternatif pilihan',
+                          style: textTheme.labelSmall?.copyWith(
+                            color: scheme.primary,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.8,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        displayName,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: textTheme.titleLarge,
-                      ),
-                      const SizedBox(height: 6),
-                      Wrap(
-                        spacing: 6,
-                        runSpacing: 6,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: <Widget>[
-                          NutritionEstimateBadge(provisional: provisional),
-                          _MetaChip(
-                            icon: Icons.restaurant_rounded,
-                            label: categoryLabel(food.category),
-                          ),
-                          _MetaChip(
-                            icon: Icons.scale_rounded,
-                            label: formatPortionInUnit(portionGrams, unit),
-                          ),
-                        ],
-                      ),
-                    ],
+                        const SizedBox(height: 3),
+                        Text(
+                          displayName,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: textTheme.titleLarge,
+                        ),
+                        const SizedBox(height: 7),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: <Widget>[
+                            NutritionEstimateBadge(provisional: provisional),
+                            _MetaChip(
+                              icon: Icons.restaurant_rounded,
+                              label: categoryLabel(food.category),
+                            ),
+                            _MetaChip(
+                              icon: Icons.scale_rounded,
+                              label: formatPortionInUnit(portionGrams, unit),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
             const SizedBox(height: 18),
             AiConfidencePanel(
               confidence: selected.confidence,
               margin: result.hasAlternatives ? result.confidenceMargin : null,
+              topThreeMass: result.topThreeMass,
+              supportedCount: supportedFoods.isEmpty
+                  ? null
+                  : supportedFoods.length,
               isManualSelection: result.isManualSelection,
               onRetake: onRetake,
               onShowSupportedFoods: () => showSupportedFoodsSheet(
@@ -146,6 +170,12 @@ final class ScanResultCard extends StatelessWidget {
             const SizedBox(height: 22),
             Row(
               children: <Widget>[
+                Icon(
+                  Icons.donut_large_rounded,
+                  size: 18,
+                  color: scheme.primary,
+                ),
+                const SizedBox(width: 7),
                 Expanded(
                   child: Text(
                     'Ringkasan gizi',
@@ -220,44 +250,78 @@ final class ScanResultCard extends StatelessWidget {
               provisional: provisional,
             ),
             const SizedBox(height: 20),
-            Text(
-              'Bukan ini?',
-              style: textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w700,
+            Container(
+              padding: const EdgeInsets.fromLTRB(14, 13, 14, 6),
+              decoration: BoxDecoration(
+                color: scheme.surfaceContainerLow,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: scheme.outlineVariant.withValues(alpha: 0.5),
+                ),
               ),
-            ),
-            if (result.hasAlternatives) ...<Widget>[
-              const SizedBox(height: 10),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
-                  for (var index = 0; index < result.candidates.length; index++)
-                    _AlternativeChip(
-                      candidate: result.candidates[index],
-                      selected: index == result.selectedIndex,
-                      onSelected: () =>
-                          onSelectCandidate(result.candidates[index].label),
+                  Row(
+                    children: <Widget>[
+                      Icon(
+                        Icons.swap_horiz_rounded,
+                        size: 17,
+                        color: scheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'Bukan ini?',
+                          style: textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (result.hasAlternatives) ...<Widget>[
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: <Widget>[
+                        for (
+                          var index = 0;
+                          index < result.candidates.length;
+                          index++
+                        )
+                          _AlternativeChip(
+                            candidate: result.candidates[index],
+                            selected: index == result.selectedIndex,
+                            onSelected: () => onSelectCandidate(
+                              result.candidates[index].label,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                  if (supportedFoods.isNotEmpty)
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextButton.icon(
+                        onPressed: () => showSupportedFoodsSheet(
+                          context,
+                          foods: supportedFoods,
+                          selectedLabel: selected.label,
+                        ),
+                        icon: const Icon(Icons.list_alt_rounded, size: 18),
+                        label: Text(
+                          'Lihat ${supportedFoods.length} makanan yang didukung',
+                        ),
+                      ),
                     ),
                 ],
               ),
-            ],
-            if (supportedFoods.isNotEmpty)
-              Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton.icon(
-                  onPressed: () => showSupportedFoodsSheet(
-                    context,
-                    foods: supportedFoods,
-                    selectedLabel: selected.label,
-                  ),
-                  icon: const Icon(Icons.list_alt_rounded, size: 18),
-                  label: Text(
-                    'Lihat ${supportedFoods.length} makanan yang didukung',
-                  ),
-                ),
-              ),
-            const SizedBox(height: 20),
+            ),
+            const SizedBox(height: 14),
+            Divider(color: scheme.outlineVariant.withValues(alpha: 0.5)),
+            const SizedBox(height: 12),
             LayoutBuilder(
               builder: (BuildContext context, BoxConstraints constraints) {
                 final detailsButton = OutlinedButton.icon(
@@ -314,8 +378,11 @@ final class _MetaChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest.withValues(alpha: 0.7),
+        color: scheme.surface.withValues(alpha: 0.72),
         borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: scheme.outlineVariant.withValues(alpha: 0.45),
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

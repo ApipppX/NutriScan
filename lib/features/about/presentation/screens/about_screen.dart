@@ -51,7 +51,9 @@ final class _AboutContent extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
               _AppIdentity(),
-              const SizedBox(height: 22),
+              const SizedBox(height: 18),
+              _DevelopmentStatusCard(classCount: info.classCount),
+              const SizedBox(height: 14),
               _AboutSection(
                 icon: Icons.memory_rounded,
                 title: 'Model klasifikasi',
@@ -97,9 +99,11 @@ final class _AboutContent extends StatelessWidget {
                   const SizedBox(height: 12),
                   _Bullet(
                     'Peringatan memakai heuristik: keyakinan di bawah '
-                    '${formatPercent(AppConfig.confidenceWarningThreshold, decimals: 0)} '
-                    'atau selisih dua prediksi teratas di bawah '
-                    '${formatPercent(AppConfig.confidenceMarginThreshold, decimals: 0)}. '
+                    '${formatPercent(AppConfig.confidenceWarningThreshold, decimals: 0)}, '
+                    'selisih dua prediksi teratas di bawah '
+                    '${formatPercent(AppConfig.confidenceMarginThreshold, decimals: 0)}, '
+                    'atau total probabilitas tiga prediksi teratas di bawah '
+                    '${formatPercent(AppConfig.topThreeMassThreshold, decimals: 0)}. '
                     'Ini bukan deteksi makanan asing yang tervalidasi.',
                   ),
                   const _Bullet(
@@ -108,8 +112,34 @@ final class _AboutContent extends StatelessWidget {
                     'alternatif yang paling sesuai.',
                   ),
                   const _Bullet(
+                    'Ditujukan untuk menu terbatas seperti kantin atau '
+                    'katering, bukan pengenal makanan umum.',
+                  ),
+                  const _Bullet(
                     'Hasil dengan keyakinan sangat rendah memerlukan '
                     'konfirmasi sebelum disimpan ke diary.',
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              const _AboutSection(
+                icon: Icons.dataset_outlined,
+                title: 'Sumber data latih',
+                children: <Widget>[
+                  _Bullet(
+                    'Dataset awal 13 kelas: Indonesian Food Dataset (Kaggle), '
+                    'lisensi MIT. https://www.kaggle.com/datasets/rizkyyk/'
+                    'dataset-food-classification',
+                  ),
+                  _Bullet(
+                    'Tambahan citra untuk kelas Bakso dan enam kelas lain: '
+                    'Mendeley Indonesian Food Image (Ashari, 2023), DOI '
+                    '10.17632/vtjd68bmwt.1, lisensi CC BY 4.0. '
+                    'https://data.mendeley.com/datasets/vtjd68bmwt/1',
+                  ),
+                  _Bullet(
+                    'Aplikasi tidak membundel citra dataset. Yang disertakan '
+                    'hanya model TFLite dan katalog nilai gizi.',
                   ),
                 ],
               ),
@@ -187,8 +217,8 @@ final class _AboutContent extends StatelessWidget {
                 title: 'Privasi & penyimpanan',
                 children: <Widget>[
                   _Bullet(
-                    'Tidak ada izin internet, telepon, atau penyimpanan '
-                    'eksternal; foto tidak diunggah.',
+                    'Build rilis tidak meminta izin internet, telepon, atau '
+                    'penyimpanan eksternal; foto tidak diunggah.',
                   ),
                   _Bullet('Inferensi berjalan lokal dengan TensorFlow Lite.'),
                   _Bullet('Diary disimpan lokal di perangkat dengan SQLite.'),
@@ -196,21 +226,87 @@ final class _AboutContent extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 14),
-              _AboutSection(
-                icon: Icons.health_and_safety_outlined,
-                title: 'Disclaimer',
-                children: <Widget>[
-                  Text(
-                    'NutriScan bukan alat medis dan tidak menggantikan '
-                    'konsultasi dengan dokter atau ahli gizi. Nilai gizi dapat '
-                    'berbeda tergantung resep, merek, dan ukuran porsi.',
-                    style: theme.textTheme.bodySmall?.copyWith(height: 1.6),
-                  ),
-                ],
+              _DisclaimerSection(
+                text:
+                    'NutriScan adalah versi pengembangan, bukan alat medis, '
+                    'dan tidak menggantikan konsultasi dengan dokter atau ahli '
+                    'gizi. Cakupan terbatas pada ${info.classCount} makanan '
+                    'dalam dataset penelitian; makanan lain dapat salah '
+                    'diklasifikasi. Nilai gizi juga dapat berbeda tergantung '
+                    'resep, merek, dan ukuran porsi.',
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Prominent status block shown before model details, so testers cannot miss
+/// that this is a limited development build.
+final class _DevelopmentStatusCard extends StatelessWidget {
+  const _DevelopmentStatusCard({required this.classCount});
+
+  final int classCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: scheme.tertiaryContainer.withValues(alpha: 0.34),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: scheme.tertiary.withValues(alpha: 0.26)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: scheme.tertiary.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(11),
+                  border: Border.all(
+                    color: scheme.tertiary.withValues(alpha: 0.18),
+                  ),
+                ),
+                child: Icon(
+                  Icons.science_outlined,
+                  size: 19,
+                  color: scheme.onTertiaryContainer,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Versi pengembangan (beta)',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    color: scheme.onTertiaryContainer,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Aplikasi ini masih dalam pengembangan dan hanya mengenali '
+            '$classCount makanan yang ada di dataset penelitian. Makanan di '
+            'luar daftar itu tetap dipetakan ke salah satu kelas, sehingga '
+            'hasil dan nilai gizinya bisa keliru. Jangan gunakan untuk '
+            'keputusan medis.',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: scheme.onTertiaryContainer,
+              height: 1.55,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -221,28 +317,44 @@ final class _AppIdentity extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    return Column(
-      children: <Widget>[
-        const BrandMark(size: 68),
-        const SizedBox(height: 14),
-        Text(
-          'NutriScan',
-          style: theme.textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.w800,
-            letterSpacing: -0.5,
-          ),
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 24, 20, 22),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: <Color>[
+            scheme.primaryContainer.withValues(alpha: 0.58),
+            scheme.surface,
+          ],
         ),
-        const SizedBox(height: 4),
-        Text(
-          'Klasifikasi makanan dan estimasi gizi sepenuhnya offline.',
-          textAlign: TextAlign.center,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: scheme.onSurfaceVariant,
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(color: scheme.primary.withValues(alpha: 0.12)),
+      ),
+      child: Column(
+        children: <Widget>[
+          const BrandMark(size: 66),
+          const SizedBox(height: 14),
+          Text(
+            'NutriScan',
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.5,
+            ),
           ),
-        ),
-        const SizedBox(height: 12),
-        const OfflineBadge(),
-      ],
+          const SizedBox(height: 5),
+          Text(
+            'Klasifikasi makanan dan estimasi gizi sepenuhnya offline.',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: scheme.onSurfaceVariant,
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 13),
+          const OfflineBadge(),
+        ],
+      ),
     );
   }
 }
@@ -270,8 +382,16 @@ final class _AboutSection extends StatelessWidget {
           children: <Widget>[
             Row(
               children: <Widget>[
-                Icon(icon, size: 20, color: scheme.primary),
-                const SizedBox(width: 8),
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: scheme.primaryContainer.withValues(alpha: 0.7),
+                    borderRadius: BorderRadius.circular(11),
+                  ),
+                  child: Icon(icon, size: 19, color: scheme.onPrimaryContainer),
+                ),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     title,
@@ -413,6 +533,71 @@ final class _Bullet extends StatelessWidget {
             child: Text(
               text,
               style: theme.textTheme.bodySmall?.copyWith(height: 1.5),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// High-visibility closing statement for the development build.
+final class _DisclaimerSection extends StatelessWidget {
+  const _DisclaimerSection({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: scheme.tertiaryContainer.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: scheme.tertiary.withValues(alpha: 0.24)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: scheme.tertiary.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: scheme.tertiary.withValues(alpha: 0.18),
+              ),
+            ),
+            child: Icon(
+              Icons.health_and_safety_outlined,
+              size: 20,
+              color: scheme.onTertiaryContainer,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  'Disclaimer',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: scheme.onTertiaryContainer,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  text,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: scheme.onTertiaryContainer,
+                    height: 1.6,
+                  ),
+                ),
+              ],
             ),
           ),
         ],

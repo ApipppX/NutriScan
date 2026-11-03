@@ -9,7 +9,7 @@ final class BrandMark extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final gradientEnd = Color.lerp(scheme.primary, scheme.tertiary, 0.42)!;
+    final gradientEnd = Color.lerp(scheme.primary, scheme.secondary, 0.58)!;
     return Semantics(
       label: 'Logo NutriScan',
       image: true,

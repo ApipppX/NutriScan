@@ -26,6 +26,20 @@ final class ScanResult {
   double get confidenceMargin =>
       (topConfidence - runnerUpConfidence).clamp(0.0, 1.0);
 
+  /// Total probability assigned to the returned top-3 candidates.
+  ///
+  /// A low mass means the remaining classes still receive meaningful
+  /// probability, so the visible shortlist does not explain the image well.
+  double get topThreeMass => candidates
+      .fold<double>(0, (sum, candidate) => sum + candidate.confidence)
+      .clamp(0.0, 1.0);
+
+  /// True when the model's probability is spread across many classes.
+  ///
+  /// This catches moderately confident top-1 scores that a simple threshold
+  /// would miss, but it is still a heuristic: the model has no unknown class.
+  bool get isDiffuse => topThreeMass < AppConfig.topThreeMassThreshold;
+
   /// True when the user explicitly picked a non-top candidate.
   bool get isManualSelection => selectedIndex != 0;
 
@@ -37,7 +51,7 @@ final class ScanResult {
       confidenceMargin < AppConfig.confidenceMarginThreshold;
 
   /// The result should be reviewed or retaken before it is trusted.
-  bool get needsReview => isLowConfidence || isAmbiguous;
+  bool get needsReview => isLowConfidence || isAmbiguous || isDiffuse;
 
   /// Review requirement for the currently displayed candidate. The top-1
   /// heuristics do not cover a manually selected low-confidence alternative.

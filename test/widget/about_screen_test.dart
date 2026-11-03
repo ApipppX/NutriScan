@@ -50,13 +50,17 @@ void main() {
     await _pumpAbout(tester);
 
     expect(find.text('Tentang NutriScan'), findsOneWidget);
+    expect(find.text('Versi pengembangan (beta)'), findsOneWidget);
     expect(find.text('Model klasifikasi'), findsOneWidget);
     expect(find.text('Batasan model'), findsOneWidget);
+    expect(find.text('Sumber data latih'), findsOneWidget);
     expect(find.text('Sumber nilai gizi'), findsOneWidget);
     expect(find.text('Privasi & penyimpanan'), findsOneWidget);
     expect(find.text('Disclaimer'), findsOneWidget);
     expect(find.textContaining('MobileNetV3-Large'), findsOneWidget);
     expect(find.textContaining('2.2.0'), findsOneWidget);
+    expect(find.textContaining('CC BY 4.0'), findsOneWidget);
+    expect(find.textContaining('10.17632/vtjd68bmwt.1'), findsOneWidget);
     expect(find.text('TKPI-2017'), findsOneWidget);
     expect(find.text('USDA-FDC-173292'), findsOneWidget);
     expect(find.textContaining('2026-10-28'), findsOneWidget);

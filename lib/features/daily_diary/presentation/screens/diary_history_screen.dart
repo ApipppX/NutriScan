@@ -80,6 +80,20 @@ final class _DayCard extends StatelessWidget {
           children: <Widget>[
             Row(
               children: <Widget>[
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: scheme.primaryContainer.withValues(alpha: 0.7),
+                    borderRadius: BorderRadius.circular(11),
+                  ),
+                  child: Icon(
+                    Icons.calendar_today_rounded,
+                    size: 17,
+                    color: scheme.onPrimaryContainer,
+                  ),
+                ),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     formatDiaryDay(group.day),
@@ -88,10 +102,21 @@ final class _DayCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                Text(
-                  '${group.entries.length} catatan',
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: scheme.onSurfaceVariant,
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 9,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: scheme.surfaceContainerHigh,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    '${group.entries.length} catatan',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
               ],
@@ -121,10 +146,18 @@ final class _DailyTotals extends StatelessWidget {
     final scheme = theme.colorScheme;
     final macros = theme.extension<MacroColors>()!;
     return Container(
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      padding: const EdgeInsets.fromLTRB(14, 13, 14, 13),
       decoration: BoxDecoration(
-        color: macros.caloriesContainer.withValues(alpha: 0.55),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: <Color>[
+            macros.caloriesContainer.withValues(alpha: 0.85),
+            macros.caloriesContainer.withValues(alpha: 0.4),
+          ],
+        ),
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: macros.calories.withValues(alpha: 0.14)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -252,6 +285,7 @@ final class _DiaryEntryTile extends StatelessWidget {
             decoration: BoxDecoration(
               color: scheme.primaryContainer.withValues(alpha: 0.55),
               borderRadius: BorderRadius.circular(13),
+              border: Border.all(color: scheme.primary.withValues(alpha: 0.1)),
             ),
             child: Text(entry.emoji, style: const TextStyle(fontSize: 22)),
           ),
@@ -302,19 +336,29 @@ final class _LocalStorageNotice extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    return Row(
-      children: <Widget>[
-        Icon(Icons.lock_outline_rounded, size: 15, color: scheme.primary),
-        const SizedBox(width: 6),
-        Expanded(
-          child: Text(
-            'Riwayat ini tersimpan lokal di perangkat ini.',
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: scheme.onSurfaceVariant,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: scheme.outlineVariant.withValues(alpha: 0.42),
+        ),
+      ),
+      child: Row(
+        children: <Widget>[
+          Icon(Icons.lock_outline_rounded, size: 15, color: scheme.primary),
+          const SizedBox(width: 7),
+          Expanded(
+            child: Text(
+              'Riwayat ini tersimpan lokal di perangkat ini.',
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: scheme.onSurfaceVariant,
+              ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -339,13 +383,23 @@ final class _EmptyDiaryState extends StatelessWidget {
                 height: 76,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: scheme.primaryContainer.withValues(alpha: 0.6),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: <Color>[
+                      scheme.primaryContainer.withValues(alpha: 0.9),
+                      scheme.primaryContainer.withValues(alpha: 0.4),
+                    ],
+                  ),
                   borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: scheme.primary.withValues(alpha: 0.12),
+                  ),
                 ),
                 child: Icon(
                   Icons.menu_book_rounded,
                   size: 34,
-                  color: scheme.primary,
+                  color: scheme.onPrimaryContainer,
                 ),
               ),
               const SizedBox(height: 18),
@@ -393,8 +447,21 @@ final class _DiaryErrorState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            Icon(Icons.error_outline_rounded, size: 44, color: scheme.error),
-            const SizedBox(height: 14),
+            Container(
+              width: 76,
+              height: 76,
+              decoration: BoxDecoration(
+                color: scheme.errorContainer.withValues(alpha: 0.7),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: scheme.error.withValues(alpha: 0.16)),
+              ),
+              child: Icon(
+                Icons.error_outline_rounded,
+                size: 34,
+                color: scheme.onErrorContainer,
+              ),
+            ),
+            const SizedBox(height: 18),
             Text(
               'Riwayat diary belum dapat dimuat.',
               textAlign: TextAlign.center,

@@ -12,14 +12,17 @@ import '../../../daily_diary/domain/entities/diary_entry.dart';
 import '../../../daily_diary/presentation/providers/diary_providers.dart';
 import '../../../daily_diary/presentation/screens/diary_history_screen.dart';
 import '../../../daily_diary/presentation/widgets/meal_type_sheet.dart';
+import '../../domain/entities/food_nutrition.dart';
 import '../../domain/entities/scan_source.dart';
 import '../controllers/scan_controller.dart';
 import '../providers/scan_providers.dart';
 import '../state/scan_state.dart';
+import '../widgets/dataset_scope_notice.dart';
 import '../widgets/scan_failure_card.dart';
 import '../widgets/scan_result_card.dart';
 import '../widgets/scan_stage_card.dart';
 import '../widgets/scanner_onboarding.dart';
+import '../widgets/supported_foods_sheet.dart';
 
 /// Main scanner page. Reads the [ScanController] state and composes the hero
 /// stage card with the appropriate result, error, or onboarding content.
@@ -122,6 +125,7 @@ final class _ScannerScreenState extends ConsumerState<ScannerScreen> {
     if (!state.result.selectedNeedsReview) return true;
 
     final candidate = state.result.selected;
+    final supportedCount = ref.read(nutritionRepositoryProvider).entries.length;
     final displayName = FoodLabelLocalizer.resolve(
       candidate.label,
       displayName: candidate.displayName,
@@ -131,6 +135,7 @@ final class _ScannerScreenState extends ConsumerState<ScannerScreen> {
       builder: (BuildContext context) {
         final scheme = Theme.of(context).colorScheme;
         final critical = state.result.isCriticallyUncertain;
+        final diffuse = state.result.isDiffuse;
         return AlertDialog(
           icon: Icon(
             critical
@@ -140,19 +145,27 @@ final class _ScannerScreenState extends ConsumerState<ScannerScreen> {
           ),
           title: Text(
             critical
-                ? 'Makanan mungkin tidak dikenali'
+                ? 'Kemungkinan bukan menu yang didukung'
+                : diffuse
+                ? 'Prediksi tersebar'
                 : 'Hasil perlu diperiksa',
           ),
           content: Text(
             critical
                 ? 'Model hanya yakin ${formatPercent(candidate.confidence)} '
-                      'terhadap "$displayName". Foto ini mungkin '
-                      'bukan salah satu makanan yang didukung, sehingga nilai '
-                      'gizinya berisiko tidak akurat.'
+                      'terhadap "$displayName". Foto ini mungkin bukan salah '
+                      'satu makanan yang didukung ($supportedCount menu '
+                      'dataset), sehingga nilai gizinya berisiko tidak akurat.'
+                : diffuse
+                ? 'Model mempertimbangkan banyak menu sekaligus untuk foto '
+                      'ini. NutriScan hanya mengenali $supportedCount menu '
+                      'dataset, sehingga "$displayName" berisiko bukan makanan '
+                      'yang sebenarnya. Periksa daftar menu sebelum menyimpan.'
                 : 'Keyakinan model ${formatPercent(candidate.confidence)} '
-                      'dengan selisih prediksi teratas yang sempit. Pastikan '
-                      '"$displayName" memang makanan pada foto '
-                      'sebelum menyimpannya.',
+                      'dengan selisih prediksi teratas yang sempit. NutriScan '
+                      'hanya mengenali $supportedCount menu dataset. Pastikan '
+                      '"$displayName" memang makanan pada foto sebelum '
+                      'menyimpannya.',
           ),
           actions: <Widget>[
             TextButton(
@@ -192,6 +205,7 @@ final class _ScannerScreenState extends ConsumerState<ScannerScreen> {
     final state = ref.watch(scanControllerProvider);
     final controller = ref.read(scanControllerProvider.notifier);
     final scheme = Theme.of(context).colorScheme;
+    final supportedFoods = ref.watch(nutritionRepositoryProvider).entries;
     final diaryEntries =
         ref.watch(diaryControllerProvider).value ?? const <DiaryEntry>[];
     final todayEntryCount = diaryEntries
@@ -261,15 +275,31 @@ final class _ScannerScreenState extends ConsumerState<ScannerScreen> {
                         ),
                       ),
                     ),
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                        child: DatasetScopeNotice(
+                          supportedCount: supportedFoods.length,
+                          compact: state is! ScanIdle,
+                          onShowSupportedFoods: () => showSupportedFoodsSheet(
+                            context,
+                            foods: supportedFoods,
+                          ),
+                          onOpenAbout: _openAbout,
+                        ),
+                      ),
+                    ),
                     SliverPadding(
                       padding: EdgeInsets.fromLTRB(
                         20,
-                        24,
+                        20,
                         20,
                         32 + MediaQuery.paddingOf(context).bottom,
                       ),
                       sliver: SliverList(
                         delegate: SliverChildListDelegate(<Widget>[
+                          _StageSectionHeader(isIdle: state is ScanIdle),
+                          const SizedBox(height: 10),
                           ScanStageCard(
                             state: state,
                             onCamera: () =>
@@ -298,15 +328,24 @@ final class _ScannerScreenState extends ConsumerState<ScannerScreen> {
                                       ),
                                     );
                                   },
-                              child: _buildContent(state, controller),
+                              child: _buildContent(
+                                state,
+                                controller,
+                                supportedFoods,
+                              ),
                             ),
                           ),
                           if (state is ScanIdle) ...<Widget>[
                             const SizedBox(height: 16),
-                            const ScannerOnboarding(),
+                            ScannerOnboarding(
+                              supportedCount: supportedFoods.length,
+                            ),
                           ],
                           const SizedBox(height: 22),
-                          _Disclaimer(scheme: scheme),
+                          _Disclaimer(
+                            scheme: scheme,
+                            supportedCount: supportedFoods.length,
+                          ),
                         ]),
                       ),
                     ),
@@ -320,13 +359,17 @@ final class _ScannerScreenState extends ConsumerState<ScannerScreen> {
     );
   }
 
-  Widget _buildContent(ScanState state, ScanController controller) {
+  Widget _buildContent(
+    ScanState state,
+    ScanController controller,
+    List<FoodNutrition> supportedFoods,
+  ) {
     return switch (state) {
       ScanSuccessState() => ScanResultCard(
         key: ValueKey<String>('result-${state.result.selected.label}'),
         result: state.result,
         portionGrams: state.effectivePortionGrams,
-        supportedFoods: ref.watch(nutritionRepositoryProvider).entries,
+        supportedFoods: supportedFoods,
         onSelectCandidate: controller.selectCandidate,
         onPortionChanged: controller.setPortion,
         onRetake: () => controller.pickAndScan(ScanSource.camera),
@@ -363,86 +406,129 @@ final class _DiaryActionBar extends StatelessWidget {
     final facts = state.portionNutrition;
     final unit = portionUnitForCategory(candidate.food.category);
 
-    return Container(
-      decoration: BoxDecoration(
-        color: scheme.surface,
-        border: Border(
-          top: BorderSide(color: scheme.outlineVariant.withValues(alpha: 0.55)),
-        ),
-        boxShadow: <BoxShadow>[
-          BoxShadow(
-            color: scheme.shadow.withValues(alpha: 0.08),
-            blurRadius: 24,
-            offset: const Offset(0, -8),
+    final isDark = theme.brightness == Brightness.dark;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: isDark
+              ? scheme.surfaceContainerLow
+              : scheme.surfaceContainerLowest,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: scheme.outlineVariant.withValues(alpha: 0.55),
           ),
-        ],
-      ),
-      child: SafeArea(
-        top: false,
-        minimum: const EdgeInsets.fromLTRB(16, 10, 16, 10),
-        child: Center(
-          // `heightFactor: 1` keeps the bar at its intrinsic height. Without it
-          // `Center` expands to the Scaffold's full height, which starves the
-          // body of space (the result page would render blank).
-          heightFactor: 1,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 620),
-            child: LayoutBuilder(
-              builder: (BuildContext context, BoxConstraints constraints) {
-                final compact = constraints.maxWidth < 380;
-                return Row(
-                  children: <Widget>[
-                    Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: macros.caloriesContainer,
-                        borderRadius: BorderRadius.circular(14),
+          boxShadow: <BoxShadow>[
+            BoxShadow(
+              color: scheme.shadow.withValues(alpha: isDark ? 0.22 : 0.08),
+              blurRadius: 24,
+              offset: const Offset(0, -6),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          top: false,
+          minimum: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+          child: Center(
+            // `heightFactor: 1` keeps the bar at its intrinsic height. Without
+            // it `Center` expands to the Scaffold's full height, which starves
+            // the body of space (the result page would render blank).
+            heightFactor: 1,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 620),
+              child: LayoutBuilder(
+                builder: (BuildContext context, BoxConstraints constraints) {
+                  final compact = constraints.maxWidth < 380;
+                  return Row(
+                    children: <Widget>[
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: macros.caloriesContainer,
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Icon(
+                          Icons.local_fire_department_rounded,
+                          color: macros.calories,
+                          size: 22,
+                        ),
                       ),
-                      child: Icon(
-                        Icons.local_fire_department_rounded,
-                        color: macros.calories,
-                        size: 22,
-                      ),
-                    ),
-                    const SizedBox(width: 11),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: <Widget>[
-                          Text(
-                            formatKcal(facts.caloriesKcal),
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              color: macros.calories,
-                              fontWeight: FontWeight.w800,
+                      const SizedBox(width: 11),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: <Widget>[
+                            Text(
+                              formatKcal(facts.caloriesKcal),
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                color: macros.calories,
+                                fontWeight: FontWeight.w800,
+                              ),
                             ),
-                          ),
-                          Text(
-                            '${formatPortionInUnit(state.effectivePortionGrams, unit)} · '
-                            '${formatPortionCount(candidate.food.portionCountFor(state.effectivePortionGrams))}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: scheme.onSurfaceVariant,
+                            Text(
+                              '${formatPortionInUnit(state.effectivePortionGrams, unit)} · '
+                              '${formatPortionCount(candidate.food.portionCountFor(state.effectivePortionGrams))}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: scheme.onSurfaceVariant,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 10),
-                    FilledButton.icon(
-                      onPressed: onSave,
-                      icon: const Icon(Icons.bookmark_add_rounded, size: 19),
-                      label: Text(compact ? 'Simpan' : 'Simpan ke Diary'),
-                    ),
-                  ],
-                );
-              },
+                      const SizedBox(width: 10),
+                      FilledButton.icon(
+                        onPressed: onSave,
+                        icon: const Icon(Icons.bookmark_add_rounded, size: 19),
+                        label: Text(compact ? 'Simpan' : 'Simpan ke Diary'),
+                      ),
+                    ],
+                  );
+                },
+              ),
             ),
           ),
         ),
       ),
+    );
+  }
+}
+
+final class _StageSectionHeader extends StatelessWidget {
+  const _StageSectionHeader({required this.isIdle});
+
+  final bool isIdle;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    return Row(
+      children: <Widget>[
+        Icon(
+          Icons.center_focus_strong_rounded,
+          size: 18,
+          color: scheme.primary,
+        ),
+        const SizedBox(width: 7),
+        Expanded(
+          child: Text(
+            'Pindai makanan',
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        Text(
+          isIdle ? 'Kamera atau galeri' : 'Foto saat ini',
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: scheme.onSurfaceVariant,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -475,15 +561,45 @@ final class _ScannerHeader extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text(
-                    'NutriScan',
-                    style: textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.3,
-                    ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      Text(
+                        'NutriScan',
+                        style: textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: scheme.secondaryContainer,
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(
+                            color: scheme.secondary.withValues(alpha: 0.16),
+                          ),
+                        ),
+                        child: Text(
+                          'BETA',
+                          style: textTheme.labelSmall?.copyWith(
+                            color: scheme.onSecondaryContainer,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 9,
+                            letterSpacing: 0.6,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   Text(
-                    'Asisten gizi offline',
+                    'Asisten gizi offline · versi pengembangan',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: textTheme.labelSmall?.copyWith(
                       color: scheme.onSurfaceVariant,
                     ),
@@ -491,19 +607,40 @@ final class _ScannerHeader extends StatelessWidget {
                 ],
               ),
             ),
-            IconButton(
-              tooltip: 'Riwayat diary',
-              onPressed: onOpenDiary,
-              icon: Badge.count(
-                count: todayEntryCount,
-                isLabelVisible: todayEntryCount > 0,
-                child: const Icon(Icons.menu_book_rounded),
+            Container(
+              decoration: BoxDecoration(
+                color: scheme.surfaceContainerLow,
+                borderRadius: BorderRadius.circular(15),
+                border: Border.all(
+                  color: scheme.outlineVariant.withValues(alpha: 0.5),
+                ),
               ),
-            ),
-            IconButton(
-              tooltip: 'Tentang NutriScan',
-              onPressed: onOpenAbout,
-              icon: const Icon(Icons.info_outline_rounded),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  IconButton(
+                    tooltip: 'Riwayat diary',
+                    visualDensity: VisualDensity.compact,
+                    onPressed: onOpenDiary,
+                    icon: Badge.count(
+                      count: todayEntryCount,
+                      isLabelVisible: todayEntryCount > 0,
+                      child: const Icon(Icons.menu_book_rounded),
+                    ),
+                  ),
+                  Container(
+                    width: 1,
+                    height: 22,
+                    color: scheme.outlineVariant.withValues(alpha: 0.5),
+                  ),
+                  IconButton(
+                    tooltip: 'Tentang NutriScan',
+                    visualDensity: VisualDensity.compact,
+                    onPressed: onOpenAbout,
+                    icon: const Icon(Icons.info_outline_rounded),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -570,19 +707,65 @@ final class _ScannerHeader extends StatelessWidget {
 }
 
 final class _Disclaimer extends StatelessWidget {
-  const _Disclaimer({required this.scheme});
+  const _Disclaimer({required this.scheme, required this.supportedCount});
 
   final ColorScheme scheme;
+  final int supportedCount;
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      'NutriScan bukan alat medis. Nilai gizi adalah estimasi dan dapat berbeda '
-      'tergantung resep serta ukuran porsi.',
-      textAlign: TextAlign.center,
-      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-        color: scheme.onSurfaceVariant.withValues(alpha: 0.85),
-        height: 1.45,
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 13, 14, 13),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.5)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(
+              color: scheme.tertiaryContainer,
+              borderRadius: BorderRadius.circular(9),
+            ),
+            child: Icon(
+              Icons.health_and_safety_outlined,
+              size: 16,
+              color: scheme.onTertiaryContainer,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  'Catatan penting',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: scheme.onSurface,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'NutriScan versi pengembangan. Hanya $supportedCount makanan '
+                  'dalam dataset penelitian yang dikenali; makanan lain tetap '
+                  'dipetakan ke salah satu kelas dan hasilnya bisa salah. Nilai '
+                  'gizi adalah estimasi, bukan alat medis.',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                    height: 1.45,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

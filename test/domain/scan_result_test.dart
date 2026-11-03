@@ -80,9 +80,11 @@ void main() {
       expect(result.topConfidence, closeTo(0.8, 1e-9));
       expect(result.runnerUpConfidence, closeTo(0.15, 1e-9));
       expect(result.confidenceMargin, closeTo(0.65, 1e-9));
+      expect(result.topThreeMass, closeTo(1.0, 1e-9));
       expect(result.isManualSelection, isFalse);
       expect(result.isLowConfidence, isFalse);
       expect(result.isAmbiguous, isFalse);
+      expect(result.isDiffuse, isFalse);
       expect(result.needsReview, isFalse);
       expect(result.selectedNeedsReview, isFalse);
       expect(result.isCriticallyUncertain, isFalse);
@@ -101,8 +103,10 @@ void main() {
       final low = ScanResult(
         candidates: <FoodCandidate>[_candidate('rendang', 0, 0.42)],
       );
+      expect(low.topThreeMass, closeTo(0.42, 1e-9));
       expect(low.isLowConfidence, isTrue);
       expect(low.isAmbiguous, isFalse);
+      expect(low.isDiffuse, isTrue);
       expect(low.needsReview, isTrue);
       expect(low.isCriticallyUncertain, isFalse);
 
@@ -114,6 +118,7 @@ void main() {
       );
       expect(ambiguous.isLowConfidence, isFalse);
       expect(ambiguous.isAmbiguous, isTrue);
+      expect(ambiguous.isDiffuse, isFalse);
       expect(ambiguous.needsReview, isTrue);
       expect(ambiguous.isCriticallyUncertain, isFalse);
 
@@ -123,6 +128,19 @@ void main() {
       expect(critical.isLowConfidence, isTrue);
       expect(critical.needsReview, isTrue);
       expect(critical.isCriticallyUncertain, isTrue);
+
+      final diffuse = ScanResult(
+        candidates: <FoodCandidate>[
+          _candidate('rendang', 0, 0.62),
+          _candidate('sate', 1, 0.05),
+          _candidate('soto', 2, 0.03),
+        ],
+      );
+      expect(diffuse.topThreeMass, closeTo(0.70, 1e-9));
+      expect(diffuse.isLowConfidence, isFalse);
+      expect(diffuse.isAmbiguous, isFalse);
+      expect(diffuse.isDiffuse, isTrue);
+      expect(diffuse.needsReview, isTrue);
     });
   });
 }

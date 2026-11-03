@@ -198,6 +198,29 @@ void main() {
     );
   });
 
+  testWidgets(
+    'shows the development and dataset-scope notice before scanning',
+    (tester) async {
+      await _pumpScanner(tester);
+
+      expect(find.text('Aplikasi masih dalam pengembangan'), findsOneWidget);
+      expect(find.text('1 menu didukung'), findsOneWidget);
+      expect(
+        find.textContaining('Makanan di luar daftar itu tetap akan dipetakan'),
+        findsOneWidget,
+      );
+
+      final supportedButton = find.text('Lihat 1 menu');
+      expect(supportedButton, findsOneWidget);
+      await tester.ensureVisible(supportedButton);
+      await tester.tap(supportedButton);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Makanan yang didukung'), findsOneWidget);
+      expect(find.text('1 kelas dalam model ini'), findsOneWidget);
+    },
+  );
+
   testWidgets('failed scan shows recovery UI without any nutrition estimate', (
     tester,
   ) async {
