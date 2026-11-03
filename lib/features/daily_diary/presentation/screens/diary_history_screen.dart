@@ -32,14 +32,38 @@ final class DiaryHistoryScreen extends ConsumerWidget {
   }
 }
 
-final class _DiaryHistoryList extends StatelessWidget {
+final class _DiaryHistoryList extends StatefulWidget {
   const _DiaryHistoryList({required this.entries});
 
   final List<DiaryEntry> entries;
 
   @override
+  State<_DiaryHistoryList> createState() => _DiaryHistoryListState();
+}
+
+class _DiaryHistoryListState extends State<_DiaryHistoryList>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final groups = _groupEntriesByDay(entries);
+    final groups = _groupEntriesByDay(widget.entries);
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 620),
@@ -50,7 +74,26 @@ final class _DiaryHistoryList extends StatelessWidget {
               const SizedBox(height: 14),
           itemBuilder: (BuildContext context, int index) {
             if (index == 0) return const _LocalStorageNotice();
-            return _DayCard(group: groups[index - 1]);
+            final group = groups[index - 1];
+            
+            return AnimatedBuilder(
+              animation: _controller,
+              builder: (context, child) {
+                final opacity = CurvedAnimation(
+                  parent: _controller,
+                  curve: Interval(
+                    (index / (groups.length + 1)).clamp(0.0, 1.0),
+                    ((index + 1) / (groups.length + 1)).clamp(0.0, 1.0),
+                    curve: Curves.easeOutCubic,
+                  ),
+                ).value;
+                return Opacity(
+                  opacity: opacity,
+                  child: child,
+                );
+              },
+              child: _DayCard(group: group),
+            );
           },
         ),
       ),

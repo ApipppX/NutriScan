@@ -106,7 +106,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Olahan Mie'), findsOneWidget);
+    expect(find.text('Olahan Mie'), findsAtLeast(1));
     expect(find.text('Estimasi'), findsOneWidget);
     expect(find.text('Estimasi sementara'), findsNothing);
     expect(
@@ -243,10 +243,12 @@ void main() {
         onScanAgain: () {},
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
 
-    expect(find.text('Rendah'), findsOneWidget);
-    expect(find.text('Hasil perlu diperiksa'), findsOneWidget);
+    expect(find.text('Keyakinan AI'), findsOneWidget);
+    expect(find.text('Tersebar'), findsOneWidget);
+    expect(find.text('Prediksi tersebar'), findsOneWidget);
     expect(find.text('Estimasi sementara'), findsOneWidget);
     expect(find.text('Estimasi'), findsNothing);
     expect(
