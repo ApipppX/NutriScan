@@ -20,7 +20,7 @@ final class NutriScanApp extends StatelessWidget {
       themeAnimationCurve: Curves.easeOutCubic,
       locale: const Locale('id'),
       supportedLocales: const <Locale>[Locale('id'), Locale('en')],
-      localizationsDelegates: const <LocalizationsDelegate<dynamic>>[
+       localizationsDelegates: const <LocalizationsDelegate<dynamic>>[
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,

@@ -157,7 +157,7 @@ class _AiConfidencePanelState extends State<AiConfidencePanel>
                       mainAxisSize: MainAxisSize.min,
                       children: <Widget>[
                         Text(
-                          '${formatPercent(widget.confidence, decimals: 1)}',
+                          formatPercent(widget.confidence, decimals: 1),
                           style: textTheme.headlineSmall?.copyWith(
                             color: scheme.onSurface,
                             fontWeight: FontWeight.w800,
