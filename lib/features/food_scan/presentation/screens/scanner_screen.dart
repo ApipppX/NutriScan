@@ -12,6 +12,7 @@ import '../../../daily_diary/domain/entities/diary_entry.dart';
 import '../../../daily_diary/presentation/providers/diary_providers.dart';
 import '../../../daily_diary/presentation/screens/diary_history_screen.dart';
 import '../../../daily_diary/presentation/widgets/meal_type_sheet.dart';
+import '../../../user_profile/presentation/screens/profile_screen.dart';
 import '../../domain/entities/food_nutrition.dart';
 import '../../domain/entities/scan_source.dart';
 import '../controllers/scan_controller.dart';
@@ -561,40 +562,44 @@ final class _ScannerHeader extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      Text(
-                        'NutriScan',
-                        style: textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -0.3,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: scheme.secondaryContainer,
-                          borderRadius: BorderRadius.circular(999),
-                          border: Border.all(
-                            color: scheme.secondary.withValues(alpha: 0.16),
-                          ),
-                        ),
-                        child: Text(
-                          'BETA',
-                          style: textTheme.labelSmall?.copyWith(
-                            color: scheme.onSecondaryContainer,
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        Text(
+                          'NutriScan',
+                          style: textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w800,
-                            fontSize: 9,
-                            letterSpacing: 0.6,
+                            letterSpacing: -0.3,
                           ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: scheme.secondaryContainer,
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(
+                              color: scheme.secondary.withValues(alpha: 0.16),
+                            ),
+                          ),
+                          child: Text(
+                            'BETA',
+                            style: textTheme.labelSmall?.copyWith(
+                              color: scheme.onSecondaryContainer,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 9,
+                              letterSpacing: 0.6,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                   Text(
                     'Asisten gizi offline · versi pengembangan',
@@ -638,6 +643,22 @@ final class _ScannerHeader extends StatelessWidget {
                     visualDensity: VisualDensity.compact,
                     onPressed: onOpenAbout,
                     icon: const Icon(Icons.info_outline_rounded),
+                  ),
+                  Container(
+                    width: 1,
+                    height: 22,
+                    color: scheme.outlineVariant.withValues(alpha: 0.5),
+                  ),
+                  IconButton(
+                    tooltip: 'Profil Saya',
+                    visualDensity: VisualDensity.compact,
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (BuildContext context) =>
+                            const ProfileScreen(),
+                      ),
+                    ),
+                    icon: const Icon(Icons.person_outline_rounded),
                   ),
                 ],
               ),
