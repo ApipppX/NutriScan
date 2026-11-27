@@ -112,17 +112,35 @@ void main() {
 
     expect(find.text('Riwayat Diary'), findsOneWidget);
     expect(find.text('Hari ini'), findsOneWidget);
-    expect(find.text('Kemarin'), findsOneWidget);
     expect(find.text('2 catatan'), findsOneWidget);
-    expect(find.text('1 catatan'), findsOneWidget);
     expect(find.text('Nasi Goreng'), findsOneWidget);
     expect(find.text('Mie Goreng'), findsOneWidget);
-    expect(find.text('Soto'), findsOneWidget);
     expect(find.text('350 kkal'), findsOneWidget);
+    expect(find.text('Rekomendasi Olahraga'), findsOneWidget);
+    expect(find.text('Level: Sedenter'), findsOneWidget);
+    expect(find.text('Sisa 1621 kkal'), findsOneWidget);
+    expect(find.textContaining('masih di bawah target'), findsOneWidget);
+    expect(find.textContaining('Jalan kaki santai'), findsOneWidget);
+    expect(find.textContaining('Peregangan / yoga ringan'), findsOneWidget);
+    expect(
+      find.textContaining('Aktivitas ringan untuk tetap bergerak'),
+      findsOneWidget,
+    );
     expect(find.textContaining('Protein', findRichText: true), findsWidgets);
     expect(find.textContaining('14 g', findRichText: true), findsOneWidget);
     expect(find.textContaining('42 g', findRichText: true), findsOneWidget);
     expect(find.textContaining('12 g', findRichText: true), findsOneWidget);
+
+    await tester.scrollUntilVisible(
+      find.text('Kemarin'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Kemarin'), findsOneWidget);
+    expect(find.text('1 catatan'), findsOneWidget);
+    expect(find.text('Soto'), findsOneWidget);
   });
 
   testWidgets('shows an empty state and a scan action', (tester) async {
@@ -131,5 +149,66 @@ void main() {
     expect(find.text('Diary masih kosong'), findsOneWidget);
     expect(find.text('Mulai scan'), findsOneWidget);
     expect(find.text('Hari ini'), findsNothing);
+  });
+
+  testWidgets('shows exercise guidance inside today\'s diary card', (
+    tester,
+  ) async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day, 12);
+
+    await _pumpHistory(
+      tester,
+      entries: <DiaryEntry>[
+        _entry(
+          id: 'today-over-target',
+          loggedAt: today,
+          mealType: MealType.lunch,
+          displayName: 'Nasi Padang',
+          caloriesKcal: 2500,
+          proteinG: 80,
+          carbohydrateG: 300,
+          fatG: 90,
+        ),
+      ],
+    );
+
+    expect(find.text('Rekomendasi Olahraga'), findsOneWidget);
+    expect(find.text('Level: Sedenter'), findsOneWidget);
+    expect(find.text('Target: bakar 529 kkal'), findsOneWidget);
+    expect(find.textContaining('Jogging santai'), findsOneWidget);
+    expect(find.textContaining('melebihi target harianmu'), findsOneWidget);
+    expect(find.text('Target Harian'), findsNothing);
+  });
+
+  testWidgets('does not attach exercise guidance to past days', (tester) async {
+    final now = DateTime.now();
+    final yesterday = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      12,
+    ).subtract(const Duration(days: 1));
+
+    await _pumpHistory(
+      tester,
+      entries: <DiaryEntry>[
+        _entry(
+          id: 'yesterday-over-target',
+          loggedAt: yesterday,
+          mealType: MealType.dinner,
+          displayName: 'Rendang',
+          caloriesKcal: 2500,
+          proteinG: 70,
+          carbohydrateG: 200,
+          fatG: 120,
+        ),
+      ],
+    );
+
+    expect(find.text('Kemarin'), findsOneWidget);
+    expect(find.text('Rekomendasi Olahraga'), findsNothing);
+    expect(find.text('Level: Sedenter'), findsNothing);
+    expect(find.textContaining('Jalan kaki santai'), findsNothing);
   });
 }

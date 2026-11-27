@@ -4,8 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../food_scan/domain/entities/nutrition_facts.dart';
+import '../../../user_profile/domain/entities/user_profile.dart';
 import '../../domain/entities/diary_entry.dart';
+import '../../domain/entities/exercise_recommendation.dart';
 import '../providers/diary_providers.dart';
+import '../providers/exercise_providers.dart';
 
 /// Chronological diary view with daily calorie and macronutrient totals.
 final class DiaryHistoryScreen extends ConsumerWidget {
@@ -32,16 +35,16 @@ final class DiaryHistoryScreen extends ConsumerWidget {
   }
 }
 
-final class _DiaryHistoryList extends StatefulWidget {
+final class _DiaryHistoryList extends ConsumerStatefulWidget {
   const _DiaryHistoryList({required this.entries});
 
   final List<DiaryEntry> entries;
 
   @override
-  State<_DiaryHistoryList> createState() => _DiaryHistoryListState();
+  ConsumerState<_DiaryHistoryList> createState() => _DiaryHistoryListState();
 }
 
-class _DiaryHistoryListState extends State<_DiaryHistoryList>
+class _DiaryHistoryListState extends ConsumerState<_DiaryHistoryList>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
 
@@ -64,6 +67,8 @@ class _DiaryHistoryListState extends State<_DiaryHistoryList>
   @override
   Widget build(BuildContext context) {
     final groups = _groupEntriesByDay(widget.entries);
+    final recommendation = ref.watch(exerciseRecommendationProvider);
+    final today = DateTime.now();
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 620),
@@ -75,7 +80,8 @@ class _DiaryHistoryListState extends State<_DiaryHistoryList>
           itemBuilder: (BuildContext context, int index) {
             if (index == 0) return const _LocalStorageNotice();
             final group = groups[index - 1];
-            
+            final isToday = _isSameDay(group.day, today);
+
             return AnimatedBuilder(
               animation: _controller,
               builder: (context, child) {
@@ -87,12 +93,12 @@ class _DiaryHistoryListState extends State<_DiaryHistoryList>
                     curve: Curves.easeOutCubic,
                   ),
                 ).value;
-                return Opacity(
-                  opacity: opacity,
-                  child: child,
-                );
+                return Opacity(opacity: opacity, child: child);
               },
-              child: _DayCard(group: group),
+              child: _DayCard(
+                group: group,
+                recommendation: isToday ? recommendation : null,
+              ),
             );
           },
         ),
@@ -102,9 +108,10 @@ class _DiaryHistoryListState extends State<_DiaryHistoryList>
 }
 
 final class _DayCard extends StatelessWidget {
-  const _DayCard({required this.group});
+  const _DayCard({required this.group, this.recommendation});
 
   final _DayGroup group;
+  final AsyncValue<DailyExerciseRecommendation>? recommendation;
 
   @override
   Widget build(BuildContext context) {
@@ -166,6 +173,16 @@ final class _DayCard extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             _DailyTotals(facts: totals),
+            if (recommendation != null) ...[
+              const SizedBox(height: 12),
+              recommendation!.when(
+                data: (DailyExerciseRecommendation value) =>
+                    _ExerciseRecommendationSection(recommendation: value),
+                loading: () => const SizedBox.shrink(),
+                error: (Object error, StackTrace stackTrace) =>
+                    const SizedBox.shrink(),
+              ),
+            ],
             const SizedBox(height: 6),
             for (var index = 0; index < group.entries.length; index++) ...[
               if (index > 0) const Divider(height: 1),
@@ -372,6 +389,221 @@ final class _DiaryEntryTile extends StatelessWidget {
   }
 }
 
+final class _ExerciseRecommendationSection extends StatelessWidget {
+  const _ExerciseRecommendationSection({required this.recommendation});
+
+  final DailyExerciseRecommendation recommendation;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final hasExcess = recommendation.hasExcess;
+    final hasSuggestions = recommendation.hasRecommendation;
+    final accent = hasExcess ? scheme.secondary : scheme.primary;
+    final title = hasSuggestions ? 'Rekomendasi Olahraga' : 'Target Harian';
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: hasExcess
+            ? scheme.secondaryContainer.withValues(alpha: 0.35)
+            : scheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: hasExcess
+              ? scheme.secondary.withValues(alpha: 0.22)
+              : scheme.outlineVariant.withValues(alpha: 0.42),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Container(
+                width: 30,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(9),
+                ),
+                child: Icon(
+                  hasExcess
+                      ? Icons.fitness_center_rounded
+                      : Icons.directions_walk_rounded,
+                  size: 16,
+                  color: accent,
+                ),
+              ),
+              const SizedBox(width: 9),
+              Expanded(
+                child: Text(
+                  title,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            recommendation.message,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: scheme.onSurfaceVariant,
+              height: 1.55,
+            ),
+          ),
+          if (hasSuggestions) ...[
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: <Widget>[
+                _RecommendationChip(
+                  icon: Icons.tune_rounded,
+                  label: 'Level: ${recommendation.activityLevel.shortLabel}',
+                  background: scheme.surfaceContainerHighest,
+                  foreground: scheme.onSurfaceVariant,
+                ),
+                if (hasExcess)
+                  _RecommendationChip(
+                    icon: Icons.local_fire_department_rounded,
+                    label:
+                        'Target: bakar '
+                        '${recommendation.targetCaloriesToBurn.round()} kkal',
+                    background: scheme.secondaryContainer,
+                    foreground: scheme.onSecondaryContainer,
+                  )
+                else
+                  _RecommendationChip(
+                    icon: Icons.flag_rounded,
+                    label:
+                        'Sisa ${recommendation.remainingCalories.round()} kkal',
+                    background: scheme.primaryContainer,
+                    foreground: scheme.onPrimaryContainer,
+                  ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Pilih salah satu aktivitas:',
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: scheme.onSurfaceVariant,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 8),
+            ...recommendation.suggestions.map(
+              (ExerciseSuggestion suggestion) =>
+                  _ExerciseSuggestionRow(suggestion: suggestion),
+            ),
+            Text(
+              'Saran dipilih untuk level aktivitas '
+              '${recommendation.activityLevel.shortLabel.toLowerCase()} dan berat '
+              '${recommendation.weightKg.toStringAsFixed(0)} kg. Pilih salah satu; '
+              'estimasi durasi dibatasi 10–90 menit dan bisa berbeda tiap orang.',
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: scheme.onSurfaceVariant.withValues(alpha: 0.85),
+                height: 1.45,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+final class _ExerciseSuggestionRow extends StatelessWidget {
+  const _ExerciseSuggestionRow({required this.suggestion});
+
+  final ExerciseSuggestion suggestion;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        children: <Widget>[
+          Text(suggestion.emoji, style: const TextStyle(fontSize: 22)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  suggestion.name,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                Text(
+                  '${suggestion.intensity.label} · ${suggestion.formattedDuration} · '
+                  '~${suggestion.estimatedKcalBurned} kkal',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+                if (suggestion.description.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    suggestion.description,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: scheme.onSurfaceVariant.withValues(alpha: 0.85),
+                      height: 1.35,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+final class _RecommendationChip extends StatelessWidget {
+  const _RecommendationChip({
+    required this.icon,
+    required this.label,
+    required this.background,
+    required this.foreground,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color background;
+  final Color foreground;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(icon, size: 13, color: foreground),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.labelSmall
+                ?.copyWith(color: foreground, fontWeight: FontWeight.w700),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 final class _LocalStorageNotice extends StatelessWidget {
   const _LocalStorageNotice();
 
@@ -529,6 +761,9 @@ final class _DayGroup {
   final DateTime day;
   final List<DiaryEntry> entries;
 }
+
+bool _isSameDay(DateTime a, DateTime b) =>
+    a.year == b.year && a.month == b.month && a.day == b.day;
 
 List<_DayGroup> _groupEntriesByDay(List<DiaryEntry> entries) {
   final byDay = <DateTime, List<DiaryEntry>>{};

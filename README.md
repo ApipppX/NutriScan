@@ -29,8 +29,10 @@ No image ever leaves the device. The release Android manifest (`src/main`) inten
 | Result experience | Persistent development/scope notice, animated macro donut, two-reference nutrition table (portion + per 100 g/ml), estimate badge with provisional state for uncertain results, confidence/margin/top-3 mass review panel, supported-food list, retake action, portion stepper with quick presets |
 | Localization | English/snake_case model labels mapped to Indonesian names (`fried_noodles` → `Olahan Mie`) |
 | Daily diary | Persistent SQLite breakfast/lunch/dinner/snack log with localized names, per-portion nutrition, and daily history totals |
+| User profile | Local body stats (weight, height, age, gender, activity level) with Mifflin-St Jeor BMR and TDEE target |
+| Exercise guidance | Daily intake compared with the TDEE target, with suggestions tailored to the profile's activity level and short guidance per exercise |
 | About/sources | In-app model metadata, development status, closed-set limitations, dataset attribution, nutrition provenance, privacy notes, and medical disclaimer |
-| Tests | 62 unit/widget tests + one Android device integration test |
+| Tests | 85 unit/widget tests + one Android device integration test |
 
 Classes: `Ayam Goreng`, `Bakso`, `Burger`, `French Fries`, `Gado-Gado`, `Ikan Goreng`, `Mie Goreng`, `Nasi Goreng`, `Nasi Padang`, `Pizza`, `Rawon`, `Rendang`, `Sate`, `Soto`.
 
@@ -74,9 +76,13 @@ These numbers describe this dataset, not universal food recognition accuracy. Se
 │   └── features/
 │       ├── about/                    # provenance + model metadata screen
 │       ├── daily_diary/
-│       │   ├── domain/               # MealType, DiaryEntry, DiaryRepository contract
+│       │   ├── domain/               # MealType, DiaryEntry, exercise recommendation, repository contract
 │       │   ├── data/                 # in-memory + SQLite diary repositories
-│       │   └── presentation/         # DiaryController, history screen, meal category sheet
+│       │   └── presentation/         # DiaryController, history screen with inline exercise guidance, meal category sheet
+│       ├── user_profile/
+│       │   ├── domain/               # UserProfile, BMR/TDEE, repository contract
+│       │   ├── data/                 # in-memory + SQLite profile repositories
+│       │   └── presentation/         # profile screen + persisted AsyncNotifier
 │       └── food_scan/
 │           ├── domain/               # entities, repository contracts, ScanFoodUseCase
 │           ├── data/
@@ -127,6 +133,7 @@ The app loads the model and nutrition catalog during a bootstrap splash. Once re
 5. If the result is uncertain, check the **Daftar makanan** sheet to confirm your food is one of the 14 supported classes, then retake the photo or pick an alternative.
 6. Adjust the portion with the stepper or the ½/1/1½/2-portion presets; every value recalculates instantly.
 7. Tap **Simpan ke Diary**, choose **Sarapan / Makan Siang / Makan Malam / Camilan**, and confirm. Uncertain results require an extra confirmation first.
+8. Tap the **Profil** icon in the header to set weight, height, age, gender, and activity level. The app computes BMR/TDEE, and the diary screen recommends exercise based on that target—burn suggestions when intake exceeds it, level-matched activity ideas otherwise.
 
 No network is required after installation.
 
@@ -141,6 +148,8 @@ No network is required after installation.
 - **Save confirmation:** uncertain results must be confirmed before the meal picker opens, preventing accidental diary entries from weak predictions.
 - **Live portion modifier:** the stepper is backed by `ScanController`, so the result card and the sticky diary bar always show the same recalculated nutrition.
 - **Daily diary:** the sticky bottom bar opens a meal-category sheet and stores a `DiaryEntry` through `DiaryController` and `DiaryRepository`. Production uses `SqfliteDiaryRepository` backed by local SQLite, while unit tests use `InMemoryDiaryRepository`.
+- **Profile & TDEE:** `UserProfileNotifier` loads and saves body stats through `UserProfileRepository` (SQLite in production). BMR uses Mifflin-St Jeor; TDEE multiplies it by the selected activity factor, and the profile form explains the selected level and its multiplier.
+- **Exercise recommendations:** `ExerciseRecommendationController` compares today's diary calories with the TDEE target and tailors the exercise mix to the profile's activity level—gentle walking/yoga for sedentary profiles, up to running/HIIT for athletes. When intake exceeds the target, suggestions are sized to burn the excess; otherwise the card offers level-matched maintenance activities. Each row shows intensity, duration, estimated burn, and a short benefit, while context chips show the active level plus either the burn target or the remaining calories. Burn rates are rough estimates scaled from a 70 kg baseline to the profile weight, durations are clamped to 10–90 minutes, and the guidance is not medical advice.
 
 ### Build
 
@@ -331,13 +340,15 @@ python ml_pipeline/generate_nutrition_data.py \
   --output /tmp/nutrition_check.json
 ```
 
-There are 62 unit/widget tests. They cover inference preprocessing and calibration, nutrition catalog parsing and provenance, portion scaling and daily-total addition, date formatting, label localization, meal-category suggestion, SQLite diary persistence, the diary history screen, the About screen, confidence/margin/top-3-mass heuristics, the development/scope notice, the estimate badge and provisional caption, the two-reference nutrition table, the supported-food sheet, the save-confirmation flow, the meal picker, failed-scan recovery without nutrition output, and a regression guard that keeps the scan result visible above the diary action bar. The integration test builds a synthetic JPEG, loads the bundled TFLite model, runs one classification in the inference isolate (including calibrated confidence), and joins the result with the nutrition repository.
+There are 85 unit/widget tests. They cover inference preprocessing and calibration, nutrition catalog parsing and provenance, portion scaling and daily-total addition, date formatting, label localization, meal-category suggestion, SQLite diary persistence, the diary history screen, the About screen, confidence/margin/top-3-mass heuristics, the development/scope notice, the estimate badge and provisional caption, the two-reference nutrition table, the supported-food sheet, the save-confirmation flow, the meal picker, failed-scan recovery without nutrition output, BMR/TDEE calculations, profile persistence, profile form validation, exercise recommendations, and a regression guard that keeps the scan result visible above the diary action bar. The integration test builds a synthetic JPEG, loads the bundled TFLite model, runs one classification in the inference isolate (including calibrated confidence), and joins the result with the nutrition repository.
 
 ---
 
 ## Persistence
 
 The diary uses `SqfliteDiaryRepository` in `main.dart`, while unit tests keep the default `InMemoryDiaryRepository`. The SQLite table is created lazily on first use and stores the localized name, emoji, meal type, portion, full per-portion nutrition, confidence, and timestamp. `DiaryHistoryScreen` groups entries by day and computes daily calorie/macro totals from the persisted rows.
+
+The user profile uses `SqfliteUserProfileRepository` (`nutriscan_profile.db`) in `main.dart`; tests use `InMemoryUserProfileRepository`. A single row holds weight, height, age, gender, and activity level. The profile is loaded asynchronously and the profile screen shows a loading state while the database opens.
 
 `NutritionRepository` remains a JSON-backed lookup. It is the only domain-facing catalog interface; migrating it to SQLite would require a new implementation of `findByIndex` / `findByLabel` with the same normalization, without changing widgets or use cases.
 
@@ -347,7 +358,7 @@ The diary uses `SqfliteDiaryRepository` in `main.dart`, while unit tests keep th
 
 - Photos are processed entirely on-device; there is no upload path or network permission.
 - The release manifest also contains no phone-state or external-storage permissions.
-- Diary entries are stored in a local SQLite database. There is no cloud sync or account system.
+- Diary entries and profile stats are stored in local SQLite databases. There is no cloud sync or account system.
 - The model was trained on user-supplied web-style food photos. Verify dataset licensing and validate on your own target population before release.
 - The reported accuracy is held-out accuracy for this 14-class dataset; it is not a guarantee of accuracy for arbitrary photos.
 - The classifier is closed-set: it has no `unknown` class and always returns one of the 14 supported foods. Low-confidence or narrow-margin warnings are heuristics, not validated out-of-distribution detection. Foods outside the supported list cannot be recognized reliably.
